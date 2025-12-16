@@ -17,7 +17,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🥋 Taekwondo Athlete Scorecard (Singapore Style v2)")
+st.title("🥋 Taekwondo Athlete Scorecard (Singapore)")
 st.markdown("*Coaching observation-first. Data supports, not drives, decisions.*")
 
 # --- Weight Categories ---
