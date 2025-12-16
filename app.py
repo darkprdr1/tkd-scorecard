@@ -5,7 +5,7 @@ import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
 
 # ═══════════════════════════════════════════════════════════════════
-# 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore-Style Simplified v2)
+# 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore)
 # Enhanced with match control, opponent-style adaptation, tactical breakdown
 # ═══════════════════════════════════════════════════════════════════
 
