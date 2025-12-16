@@ -75,7 +75,7 @@ with st.form("scorecard_form"):
 
     # Attendance & Engagement
     st.markdown("---")
-    st.subheader("5. Attendance & Engagement (出勤與投入)")
+    st.subheader("5. Attendance & Engagement (出勤&參與")
     with st.expander("📊 Input Attendance Data (輸入出勤數據)", expanded=True):
         c1, c2 = st.columns(2)
         total = c1.number_input("Expected Attendance (應出席)", value=20)
@@ -88,7 +88,7 @@ with st.form("scorecard_form"):
         scores["Attendance (出勤率)"] = att_score
         
         checks = st.multiselect("Attitude Checklist (態度檢核)", 
-                               ["Punctuality (準時)", "Equipment Complete (裝備齊全)", "Focus (專注)", "Voice/Participation (聲量)", "Initiative (主動)"], 
+                               ["Punctuality (準時)", "Equipment Complete (裝備齊全)", "Focus (專注)", "Voice/Participation (精神)", "Initiative (主動)"], 
                                ["Punctuality (準時)", "Equipment Complete (裝備齊全)"])
         scores["Training Attitude (訓練態度)"] = st.slider("Attitude Score (態度評分)", 1, 5, min(len(checks), 5))
 
