@@ -5,8 +5,8 @@ import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
 
 # ═══════════════════════════════════════════════════════════════════
-# 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore-Style Simplified)
-# Qualitative observation-focused, minimal quantitative metrics
+# 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore-Style Simplified v2)
+# Enhanced with match control, opponent-style adaptation, tactical breakdown
 # ═══════════════════════════════════════════════════════════════════
 
 st.set_page_config(page_title="Taekwondo Athlete Scorecard", page_icon="🥋", layout="wide")
@@ -17,7 +17,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🥋 Taekwondo Athlete Scorecard (Singapore Style)")
+st.title("🥋 Taekwondo Athlete Scorecard (Singapore Style v2)")
 st.markdown("*Coaching observation-first. Data supports, not drives, decisions.*")
 
 # --- Weight Categories ---
@@ -77,25 +77,52 @@ with st.form("assessment_form"):
     # A. TECHNICAL & TACTICAL EXECUTION
     # ─────────────────────────────────────────────────────────────
     st.subheader("A. Technical & Tactical Execution (技術與戰術執行)")
-    st.markdown("**Focus:** Are technical choices aligned with tactics? Can athlete adjust when opponent changes tempo?")
+    st.markdown("**Focus:** Tactical planning, match control, adjustment to different opponent styles, technical consistency under pressure?")
     
+    # Pre-game & In-match breakdown
+    col_tact1, col_tact2 = st.columns(2)
+    
+    with col_tact1:
+        st.markdown("**Pre-Match Tactical Planning (賽前戰術規劃)**")
+        pregame_tactic = st.text_area(
+            "Pre-game observation",
+            height=80,
+            placeholder="Tactical plan clarity, opponent analysis, strategy selection, readiness...",
+            key="pregame_tactic"
+        )
+        assessment_data["Pre_Match_Tactic"] = pregame_tactic
+    
+    with col_tact2:
+        st.markdown("**In-Match Tactical Execution (比賽中戰術執行)**")
+        inmatch_tactic = st.text_area(
+            "In-match observation",
+            height=80,
+            placeholder="Tactic execution consistency, tactical adjustments, tempo response...",
+            key="inmatch_tactic"
+        )
+        assessment_data["In_Match_Tactic"] = inmatch_tactic
+    
+    st.markdown("**Match Control & Opponent-Style Adaptation (比賽掌控與對手風格適應)**")
     tech_observation = st.text_area(
         "Coaching Observation (教練觀察)",
         height=100,
-        placeholder="Key observations: tactical consistency, technique selection, adaptation to opponent changes, technical quality under pressure...",
+        placeholder="Match control ability, adaptation to different opponent styles (e.g., aggressive/continuous attackers vs. slow/tempo-based players), technical quality under pressure, opponent-specific adjustments...",
         key="tech_obs"
     )
     assessment_data["Technical_Observation"] = tech_observation
     
     st.markdown("**Supporting Evidence (佐證數據):**")
-    col_a1, col_a2, col_a3 = st.columns(3)
+    col_a1, col_a2, col_a3, col_a4 = st.columns(4)
     with col_a1:
-        scoring_eff = st.number_input("Scoring Efficiency (%)", min_value=0, max_value=100, step=5, value=50)
-        assessment_data["Scoring_Efficiency"] = scoring_eff
+        scoring_eff = st.number_input("Scoring Effectiveness (%)", min_value=0, max_value=100, step=5, value=50)
+        assessment_data["Scoring_Effectiveness"] = scoring_eff
     with col_a2:
+        match_control = st.number_input("Match Control (1-5)", min_value=1, max_value=5, step=1, value=3)
+        assessment_data["Match_Control"] = match_control
+    with col_a3:
         counters = st.number_input("Counter-attacks Conceded (per match)", min_value=0, step=1, value=0)
         assessment_data["Counters_Conceded"] = counters
-    with col_a3:
+    with col_a4:
         penalties = st.number_input("Penalties Received (per match)", min_value=0, step=1, value=0)
         assessment_data["Penalties_Received"] = penalties
     
@@ -105,18 +132,18 @@ with st.form("assessment_form"):
     # B. COMPETITION BEHAVIOR & READINESS
     # ─────────────────────────────────────────────────────────────
     st.subheader("B. Competition Behavior & Readiness (競賽行為與準備度)")
-    st.markdown("**Focus:** Response after score/penalty? Decision quality when behind? International tempo adaptation?")
+    st.markdown("**Focus:** Response after score/penalty? Decision quality when behind? Match load tolerance under international tempo?")
     
     comp_observation = st.text_area(
         "Coaching Observation (教練觀察)",
         height=100,
-        placeholder="Key observations: post-score reactions, decision-making when trailing, pressure response, adaptability to different opponents, international rhythm adjustment...",
+        placeholder="Post-score reactions, decision-making when trailing, pressure response, opponent adaptation, match load tolerance (physical & mental), international rhythm adjustment...",
         key="comp_obs"
     )
     assessment_data["Competition_Observation"] = comp_observation
     
     st.markdown("**Supporting Evidence (佐證數據):**")
-    col_b1, col_b2, col_b3 = st.columns(3)
+    col_b1, col_b2, col_b3, col_b4 = st.columns(4)
     with col_b1:
         intl_matches = st.number_input("International Matches Competed (lifetime)", min_value=0, step=1, value=0)
         assessment_data["Intl_Matches"] = intl_matches
@@ -126,6 +153,9 @@ with st.form("assessment_form"):
     with col_b3:
         pressure_response = st.selectbox("Pressure Response", ["Positive (積極)", "Neutral (中立)", "Negative (消極)"])
         assessment_data["Pressure_Response"] = pressure_response
+    with col_b4:
+        load_tolerance = st.selectbox("Match Load Tolerance", ["High (高)", "Moderate (中等)", "Low (低)"])
+        assessment_data["Match_Load_Tolerance"] = load_tolerance
     
     st.divider()
     
@@ -138,7 +168,7 @@ with st.form("assessment_form"):
     train_observation = st.text_area(
         "Coaching Observation (教練觀察)",
         height=100,
-        placeholder="Key observations: training consistency, focus during sessions, participation in key sessions, recovery quality, training attitude, peer dynamics...",
+        placeholder="Training consistency, focus during sessions, participation in key sessions, recovery quality, training attitude, peer dynamics...",
         key="train_obs"
     )
     assessment_data["Training_Observation"] = train_observation
@@ -173,7 +203,8 @@ with st.form("assessment_form"):
         "Injury/Physical Concern (傷病/身體疑慮)",
         "Inconsistent Performance (表現不穩定)",
         "Limited Int'l Exposure (缺乏國際經驗)",
-        "Decision-Making Under Pressure (高壓決策能力)"
+        "Decision-Making Under Pressure (高壓決策能力)",
+        "Opponent-Style Adaptation (對手風格適應)"
     ]
     risk_flags = st.multiselect("Select applicable risks (勾選適用風險):", risk_options)
     assessment_data["Risk_Flags"] = ", ".join(risk_flags) if risk_flags else "None"
@@ -208,7 +239,7 @@ with st.form("assessment_form"):
         exec_summary = st.text_area(
             "1-2 sentence overview (整體摘要，1-2句)",
             height=80,
-            placeholder="e.g., 'Strong tactical foundation but needs more high-intensity match exposure. Technical execution improving, consistency remains key focus for next cycle.'",
+            placeholder="e.g., 'Strong match control against aggressive opponents but struggles with slow tempo players. Technical execution improving, opponent-style adaptation is key focus.'",
             key="exec_summary"
         )
         assessment_data["Executive_Summary"] = exec_summary
@@ -219,7 +250,7 @@ with st.form("assessment_form"):
     next_actions = st.text_area(
         "Specific, time-bound actions (具體、限時的行動)",
         height=120,
-        placeholder="e.g., '1) Increase international match exposure (target: 2 matches) 2) Focus on decision-making under fatigue via high-intensity conditioning 3) Participate in 100% of key technical sessions 4) Evaluate form after next competition'",
+        placeholder="e.g., '1) Build opponent-style adaptation (2+ matches vs slow-tempo players) 2) Strengthen match load tolerance via high-intensity conditioning 3) Participate in 100% of key technical sessions 4) Evaluate tactical adjustments after next competition'",
         key="next_actions"
     )
     assessment_data["Next_Actions"] = next_actions
@@ -256,12 +287,16 @@ if submit_btn:
                 "Risk_Flags (風險)": assessment_data.get("Risk_Flags", "None"),
                 "Attendance_Rate (出席率%)": f"{att_rate:.1f}",
                 "Key_Session_Rate (關鍵課程%)": f"{key_rate:.1f}",
-                "Scoring_Efficiency (得分效率%)": scoring_eff,
+                "Scoring_Effectiveness (得分效率%)": scoring_eff,
+                "Match_Control (比賽掌控)": match_control,
                 "Counters_Conceded (被反擊/場)": counters,
                 "Penalties (判罰/場)": penalties,
                 "Intl_Matches (國際比賽場數)": intl_matches,
                 "Consistency (表現一致性)": consistency,
                 "Pressure_Response (壓力反應)": pressure_response,
+                "Match_Load_Tolerance (比賽負荷承受)": load_tolerance,
+                "Pre_Match_Tactic (賽前戰術)": assessment_data.get("Pre_Match_Tactic", ""),
+                "In_Match_Tactic (比賽中戰術)": assessment_data.get("In_Match_Tactic", ""),
                 "Tech_Observation (技術觀察)": tech_observation,
                 "Comp_Observation (競賽觀察)": comp_observation,
                 "Train_Observation (訓練觀察)": train_observation,
@@ -285,7 +320,7 @@ if submit_btn:
             st.success(f"🎉 Success! {athlete_name}'s assessment uploaded to Google Sheets!")
             
             # Generate simple 3-dimensional radar chart
-            tech_score = 3.5 if scoring_eff >= 50 else 2.5
+            tech_score = (scoring_eff / 20) * 0.5 + (match_control / 5) * 0.5
             comp_score = 3.5 if consistency == "High (穩定)" else 2.5
             train_score = min(5, att_rate / 20)
             
