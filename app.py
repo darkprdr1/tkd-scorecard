@@ -444,11 +444,11 @@ with st.form("assessment_form"):
 
     col_submit1, col_submit2, col_submit3 = st.columns(3)
     with col_submit1:
-        submit_btn = st.form_submit_button("✅ Submit & Upload (儲存並上傳)", use_container_width=True)
+        submit_btn = st.form_submit_button("✅ Submit & Upload", use_container_width=True)
     with col_submit2:
-        download_btn = st.form_submit_button("📄 Generate PDF Only (僅產生 PDF)", use_container_width=True)
+        download_btn = st.form_submit_button("📄 Generate PDF Only ", use_container_width=True)
     with col_submit3:
-        st.form_submit_button("❌ Clear Form (清除表單)", type="secondary", use_container_width=True)
+        st.form_submit_button("❌ Clear Form", type="secondary", use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════════════
 # 4. Live Training Attendance (即時訓練出席率與圖表)
@@ -713,7 +713,7 @@ if "pdf_filename" not in st.session_state:
 
 if submit_btn or download_btn:
     if not athlete_name:
-        st.error("⚠️ Please enter Athlete Name (請先輸入選手姓名)。")
+        st.error("⚠️ Please enter Athlete Name。")
         st.stop()
 
     athlete_info = {
@@ -737,13 +737,13 @@ if submit_btn or download_btn:
         pdf_buffer = generate_pdf_report(athlete_info, assessment_data, is_sparring)
         st.session_state.pdf_buffer = pdf_buffer
         st.session_state.pdf_filename = f"{athlete_name}_Assessment_{eval_date.strftime('%Y%m%d')}.pdf"
-        st.success("📄 PDF report generated successfully.（PDF 報告已產生）")
+        st.success("📄 PDF report generated successfully.")
     except Exception as e:
         st.error(f"❌ PDF generation failed: {str(e)}")
         logger.error(f"PDF error: {str(e)}", exc_info=True)
 
     if submit_btn:
-        with st.spinner("🔄 Uploading data to Google Sheets, please wait…（資料上傳中）"):
+        with st.spinner("🔄 Uploading data to Google Sheets, please wait…"):
             try:
                 conn = st.connection("gsheets", type=GSheetsConnection)
                 row_data = {
