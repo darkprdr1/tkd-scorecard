@@ -1,5 +1,5 @@
 streamlit==1.28.0
 pandas
 plotly
-streamlit-gsheets
+streamlit-gsheets-connection
 reportlab==4.0.9
