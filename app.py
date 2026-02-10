@@ -717,7 +717,7 @@ if submit_btn or download_btn:
         "next_actions": next_actions,
     }
 
-    assessment_data["Eval_Mode"] = "Sparring if is_sparring else "Poomsae"
+    assessment_data["Eval_Mode"] = "Sparring" if is_sparring else "Poomsae"
     assessment_data["Athlete_Status"] = athlete_status
     assessment_data["Risk_Flags"] = risk_flags
 
