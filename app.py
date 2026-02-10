@@ -3,11 +3,15 @@ import pandas as pd
 from datetime import datetime
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
+import logging
 
 # ═══════════════════════════════════════════════════════════════════
-# 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore)
-# Enhanced with match control, opponent-style adaptation, tactical breakdown
+# 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore) - OPTIMIZED
 # ═══════════════════════════════════════════════════════════════════
+
+# 配置日誌
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 st.set_page_config(page_title="Taekwondo Athlete Scorecard", page_icon="🥋", layout="wide")
 
@@ -263,18 +267,24 @@ with st.form("assessment_form"):
     submit_btn = st.form_submit_button("✅ Submit & Upload to Cloud", type="primary", use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════════════
-# HANDLE SUBMISSION
+# HANDLE SUBMISSION - IMPROVED ERROR HANDLING
 # ═══════════════════════════════════════════════════════════════════
 
 if submit_btn:
+    # 1️⃣ 驗證基本輸入
     if not athlete_name:
         st.error("⚠️ Please enter athlete name")
-    else:
+        st.stop()
+    
+    # 2️⃣ 顯示提交中的狀態
+    with st.spinner("🔄 Uploading to Google Sheets..."):
         try:
-            # Create connection
+            # 3️⃣ 建立連接 - 添加詳細日誌
+            logger.info("Attempting to establish Google Sheets connection...")
             conn = st.connection("gsheets", type=GSheetsConnection)
+            logger.info("✅ Connection established successfully")
             
-            # Prepare data
+            # 4️⃣ 準備數據
             row_data = {
                 "Date (日期)": eval_date.strftime("%Y-%m-%d"),
                 "Name (姓名)": athlete_name,
@@ -304,35 +314,89 @@ if submit_btn:
                 "Next_Actions (下階段行動)": next_actions
             }
             
+            # 5️⃣ 創建新數據框
             new_df = pd.DataFrame([row_data])
+            logger.info(f"New data prepared: {new_df.shape}")
             
-            # Read & merge existing data
+            # 6️⃣ 讀取並合併現有數據 - 帶有例外處理
             try:
+                logger.info("Attempting to read existing data from Google Sheets...")
                 existing_data = conn.read(worksheet="Sheet1", ttl=0)
-                existing_df = pd.DataFrame(existing_data)
-                updated_df = pd.concat([existing_df, new_df], ignore_index=True)
-            except:
+                
+                if isinstance(existing_data, list):
+                    if len(existing_data) > 0:
+                        existing_df = pd.DataFrame(existing_data)
+                        logger.info(f"Existing data loaded: {existing_df.shape}")
+                    else:
+                        existing_df = pd.DataFrame()
+                        logger.info("Sheet is empty, creating new")
+                else:
+                    existing_df = existing_data
+                    logger.info(f"Existing data loaded: {existing_df.shape}")
+                
+                # 合併數據
+                if len(existing_df) > 0:
+                    updated_df = pd.concat([existing_df, new_df], ignore_index=True)
+                    logger.info(f"Data merged: {updated_df.shape}")
+                else:
+                    updated_df = new_df
+                    logger.info("Using new data as first entry")
+                    
+            except Exception as read_error:
+                logger.warning(f"Could not read existing data: {str(read_error)}. Using new data only.")
                 updated_df = new_df
             
-            # Write to Google Sheets
+            # 7️⃣ 上傳至 Google Sheets
+            logger.info("Uploading data to Google Sheets...")
             conn.update(worksheet="Sheet1", data=updated_df)
+            logger.info("✅ Data uploaded successfully!")
             
+            # 8️⃣ 成功提示
             st.success(f"🎉 Success! {athlete_name}'s assessment uploaded to Google Sheets!")
+            st.balloons()
             
-            # Generate simple 3-dimensional radar chart
-            tech_score = (scoring_eff / 20) * 0.5 + (match_control / 5) * 0.5
-            comp_score = 3.5 if consistency == "High (穩定)" else 2.5
-            train_score = min(5, att_rate / 20)
+            # 9️⃣ 生成雷達圖
+            try:
+                tech_score = (scoring_eff / 20) * 0.5 + (match_control / 5) * 0.5
+                comp_score = 3.5 if consistency == "High (穩定)" else (2.5 if consistency == "Moderate (中等)" else 1.5)
+                train_score = min(5, att_rate / 20)
+                
+                radar_data = pd.DataFrame({
+                    "dimension": ["Technical & Tactical\n(技術戰術)", "Competition Behavior\n(競賽行為)", "Training Engagement\n(訓練投入)"],
+                    "score": [tech_score, comp_score, train_score]
+                })
+                
+                fig = px.line_polar(radar_data, r='score', theta='dimension', line_close=True, 
+                                   range_r=[0, 5], markers=True)
+                fig.update_traces(fill='toself', line_color='#0288D1', fillcolor='rgba(2, 136, 209, 0.3)')
+                fig.update_layout(title=f"{athlete_name} - Performance Profile")
+                st.plotly_chart(fig, use_container_width=True)
+                logger.info("✅ Radar chart generated successfully")
+            except Exception as chart_error:
+                logger.error(f"Chart generation failed: {str(chart_error)}")
+                st.warning("Chart generation failed, but data was uploaded successfully.")
             
-            radar_data = pd.DataFrame({
-                "dimension": ["Technical & Tactical\n(技術戰術)", "Competition Behavior\n(競賽行為)", "Training Engagement\n(訓練投入)"],
-                "score": [tech_score, comp_score, train_score]
-            })
+        except KeyError as e:
+            st.error(f"❌ Configuration Error: {str(e)}")
+            st.info("""
+            **請檢查以下項目：**
             
-            fig = px.line_polar(radar_data, r='score', theta='dimension', line_close=True, 
-                               range_r=[0, 5], markers=True)
-            fig.update_traces(fill='toself', line_color='#0288D1', fillcolor='rgba(2, 136, 209, 0.3)')
-            st.plotly_chart(fig, use_container_width=True)
+            1. 確認 `.streamlit/secrets.toml` 已創建並包含正確的 `[connections.gsheets]` 配置
+            2. 檢查 Google Sheet ID 是否正確
+            3. 確認已分享 Google Sheet 給 Service Account
+            4. 本地測試：`streamlit secrets show`
+            """)
+            logger.error(f"KeyError: {str(e)}")
             
         except Exception as e:
-            st.error(f"Upload failed: {str(e)}")
+            st.error(f"❌ Upload failed: {str(e)}")
+            st.info("""
+            **常見問題排查：**
+            
+            - **錯誤：Worksheet not found** → 檢查工作表名稱（默認 "Sheet1"）
+            - **錯誤：Authentication failed** → 確認 Service Account 已獲得編輯權限
+            - **錯誤：Connection timeout** → 檢查網絡連接
+            
+            詳見文檔：https://docs.streamlit.io/develop/tutorials/databases/private-gsheet
+            """)
+            logger.error(f"Exception occurred: {str(e)}", exc_info=True)
