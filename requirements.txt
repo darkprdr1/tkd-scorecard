@@ -1,4 +1,7 @@
-streamlit
-pandas
-plotly
-st-gsheets-connection
+streamlit==1.28.0
+pandas>=1.3.0
+plotly>=5.0.0
+streamlit-gsheets>=0.0.19
+reportlab>=4.0.0
+google-cloud-storage
+pyarrow
