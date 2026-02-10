@@ -4,14 +4,6 @@ from datetime import datetime
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
 import logging
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
-import io
-from datetime import date
 
 # ═══════════════════════════════════════════════════════════════════
 # 🥋 TAEKWONDO ATHLETE SCORECARD (Singapore) - DUAL MODE + PDF REPORT
