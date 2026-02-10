@@ -92,11 +92,11 @@ eval_mode = st.radio(
     "Evaluation Mode (評估模式)",
     ["Sparring / Kyorugi (對打)", "Poomsae (品勢)"],
     horizontal=True,
-    help="Please select the assessment type for this session.（請選擇本次評估項目）",
+    help="Please select the assessment type for this session.",
 )
 
-is_sparring = "Sparring" in eval_mode or "對打" in eval_mode
-is_poomsae = "Poomsae" in eval_mode or "品勢" in eval_mode
+is_sparring = "Sparring" in eval_mode
+is_poomsae = "Poomsae" in eval_mode
 
 st.divider()
 
@@ -104,40 +104,40 @@ st.divider()
 # 1. Athlete Profile
 # ═══════════════════════════════════════════════════════════════════
 
-st.header("1️⃣ Athlete Profile (選手基本資料)")
+st.header("1️⃣ Athlete Profile")
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    athlete_name = st.text_input("Athlete Name (選手姓名)")
+    athlete_name = st.text_input("Athlete Name")
 
 with col2:
-    eval_date = st.date_input("Evaluation Date (評估日期)", datetime.today())
+    eval_date = st.date_input("Evaluation Date", datetime.today())
 
 with col3:
-    age_group = st.selectbox("Age Division (年齡組別)", list(weight_categories.keys()))
+    age_group = st.selectbox("Age Division", list(weight_categories.keys()))
 
 with col4:
-    gender = st.selectbox("Gender (性別)", ["Male (男)", "Female (女)"])
+    gender = st.selectbox("Gender (性別)", ["Male", "Female"])
 
 col5, col6, col7 = st.columns(3)
 
 with col5:
     if is_sparring:
         available_weights = weight_categories[age_group][gender]
-        weight_cat = st.selectbox("Weight Category (量級)", available_weights)
+        weight_cat = st.selectbox("Weight Category", available_weights)
     else:
         weight_cat = "N/A"
 
 with col6:
     context = st.selectbox(
-        "Context (參賽情境)",
-        ["Domestic Competition (國內賽)", "International Competition (國際賽)", "Training Camp (移地訓練)"],
+        "Context",
+        ["Domestic Training (國內訓練)", "International Competition (國際賽)", "Training Camp (移地訓練)"],
     )
 
 with col7:
     eval_type = st.selectbox(
-        "Evaluation Type (評估類型)",
+        "Evaluation Type",
         ["Regular Check (例行評估)", "Event-based (賽事前後)", "Boot Camp (集訓期間)"],
     )
 
@@ -243,7 +243,7 @@ with st.form("assessment_form"):
             assessment_data["Pressure_Response"] = pressure_response
 
         with col_b4:
-            load_tolerance = st.selectbox("Match Load Tolerance (比賽負荷耐受度)", ["High", "Moderate", "Low"])
+            load_tolerance = st.selectbox("Match Load Tolerance (比賽負荷承受度)", ["High", "Moderate", "Low"])
             assessment_data["Match_Load_Tolerance"] = load_tolerance
 
         st.divider()
@@ -265,7 +265,7 @@ with st.form("assessment_form"):
         col_c1, col_c2, col_c3 = st.columns(3)
 
         with col_c1:
-            injury_flag = st.selectbox("Injury Risk (傷病風險)", ["None", "Minor", "Moderate", "High"])
+            injury_flag = st.selectbox("Injury Risk (受傷風險)", ["None", "Minor", "Moderate", "High"])
             assessment_data["Injury_Risk"] = injury_flag
 
         with col_c2:
@@ -380,15 +380,15 @@ with st.form("assessment_form"):
         )
         assessment_data["Health_Status"] = health_observation
 
-        st.markdown("**Risk Flags (風險標記)：**")
+        st.markdown("**Risk Flags (風險指標)：**")
         col_c1, col_c2, col_c3 = st.columns(3)
 
         with col_c1:
-            flexibility_flag = st.selectbox("Flexibility Concern (柔軟度疑慮)", ["None", "Minor", "Moderate", "High"])
+            flexibility_flag = st.selectbox("Flexibility Concern (柔軟度)", ["None", "Minor", "Moderate", "High"])
             assessment_data["Flexibility_Concern"] = flexibility_flag
 
         with col_c2:
-            strength_flag = st.selectbox("Strength/Power Concern (力量／爆發力疑慮)", ["None", "Minor", "Moderate", "High"])
+            strength_flag = st.selectbox("Strength/Power Concern (力量／爆發力)", ["None", "Minor", "Moderate", "High"])
             assessment_data["Strength_Concern"] = strength_flag
 
         with col_c3:
@@ -419,7 +419,7 @@ with st.form("assessment_form"):
 
     st.markdown("**Executive Summary (評估摘要)：**")
     exec_summary = st.text_area(
-        "Summary of Assessment (2–3 sentences) (請以 2–3 句整理本次評估重點)",
+        "Summary of Assessment (2–3 sentences) (以 2–3 句整理本次評估重點)",
         height=120,
         placeholder="Highlight key strengths, main areas for development, and readiness for upcoming events.（說明優勢、待加強面向與整體準備度）",
         key="exec_summary",
@@ -605,20 +605,19 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
 
     elements.append(Paragraph("SINGAPORE TAEKWONDO NATIONAL TEAM", title_style))
     elements.append(Paragraph("Athlete Assessment Report", title_style))
-    elements.append(Paragraph("新加坡跆拳道國家隊選手評估報告", title_style))
     elements.append(Spacer(1, 0.15 * inch))
 
     weight_val = athlete_info["weight_cat"] if is_sparring else "N/A"
 
     athlete_table_data = [
-        [Paragraph("Athlete Name (選手姓名)", label_style), athlete_info["athlete_name"]],
-        [Paragraph("Evaluation Date (評估日期)", label_style), athlete_info["eval_date"].strftime("%Y-%m-%d")],
-        [Paragraph("Age Division (年齡組別)", label_style), athlete_info["age_group"]],
-        [Paragraph("Gender (性別)", label_style), athlete_info["gender"]],
-        [Paragraph("Weight Category (量級)", label_style), weight_val],
-        [Paragraph("Context (參賽情境)", label_style), athlete_info["context"]],
-        [Paragraph("Evaluation Type (評估類型)", label_style), athlete_info["eval_type"]],
-        [Paragraph("Mode (評估模式)", label_style), "Sparring (對打)" if is_sparring else "Poomsae (品勢)"],
+        [Paragraph("Athlete Name", label_style), athlete_info["athlete_name"]],
+        [Paragraph("Evaluation Date", label_style), athlete_info["eval_date"].strftime("%Y-%m-%d")],
+        [Paragraph("Age Division", label_style), athlete_info["age_group"]],
+        [Paragraph("Gender)", label_style), athlete_info["gender"]],
+        [Paragraph("Weight Category", label_style), weight_val],
+        [Paragraph("Context", label_style), athlete_info["context"]],
+        [Paragraph("Evaluation Type", label_style), athlete_info["eval_type"]],
+        [Paragraph("Mode", label_style), "Sparring" if is_sparring else "Poomsae"],
     ]
 
     athlete_table = Table(athlete_table_data, colWidths=[2.6 * inch, 2.9 * inch])
@@ -627,60 +626,60 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
     elements.append(Spacer(1, 0.2 * inch))
 
     if is_sparring:
-        elements.append(Paragraph("Technical & Tactical Observation (技術與戰術觀察)", heading_style))
+        elements.append(Paragraph("Technical & Tactical Observation", heading_style))
         elements.append(Paragraph(assessment_data.get("Technical_Observation", "N/A"), body_style))
         elements.append(Spacer(1, 0.1 * inch))
 
-        elements.append(Paragraph("Competition Behaviour (競賽行為表現)", heading_style))
+        elements.append(Paragraph("Competition Behaviour", heading_style))
         elements.append(Paragraph(assessment_data.get("Competition_Observation", "N/A"), body_style))
         elements.append(Spacer(1, 0.1 * inch))
 
         sparring_data = [
-            ["Metric (指標)", "Value (數值)"],
-            ["Scoring Effectiveness (%) (得分效率)", f"{assessment_data.get('Scoring_Effectiveness', 'N/A')}%"],
-            ["Match Control (1–5) (比賽掌控度)", f"{assessment_data.get('Match_Control', 'N/A')}"],
-            ["Counters Conceded per Match (每場被反擊次數)", f"{assessment_data.get('Counters_Conceded', 'N/A')}"],
-            ["Penalties per Match (每場受罰次數)", f"{assessment_data.get('Penalties_Received', 'N/A')}"],
-            ["Attendance Rate (%) (訓練出席率)", f"{assessment_data.get('Attendance_Rate', 0):.1f}%"],
+            ["Metric", "Value"],
+            ["Scoring Effectiveness (%)", f"{assessment_data.get('Scoring_Effectiveness', 'N/A')}%"],
+            ["Match Control (1–5)", f"{assessment_data.get('Match_Control', 'N/A')}"],
+            ["Counters Conceded per Match", f"{assessment_data.get('Counters_Conceded', 'N/A')}"],
+            ["Penalties per Match", f"{assessment_data.get('Penalties_Received', 'N/A')}"],
+            ["Attendance Rate (%)", f"{assessment_data.get('Attendance_Rate', 0):.1f}%"],
         ]
         sparring_table = Table(sparring_data, colWidths=[3.1 * inch, 2.4 * inch])
         sparring_table.setStyle(get_table_style_header())
         elements.append(sparring_table)
         elements.append(Spacer(1, 0.15 * inch))
     else:
-        elements.append(Paragraph("Technical Execution (品勢技術執行)", heading_style))
+        elements.append(Paragraph("Technical Execution", heading_style))
         elements.append(Paragraph(assessment_data.get("Technical_Observation", "N/A"), body_style))
         elements.append(Spacer(1, 0.1 * inch))
 
-        elements.append(Paragraph("Competition Performance (競賽表現)", heading_style))
+        elements.append(Paragraph("Competition Performance", heading_style))
         elements.append(Paragraph(assessment_data.get("Competition_Observation", "N/A"), body_style))
         elements.append(Spacer(1, 0.1 * inch))
 
         poomsae_data = [
-            ["Metric (指標)", "Value (數值)"],
-            ["Technical Accuracy (技術正確度)", f"{assessment_data.get('Accuracy_Score', 'N/A')}"],
-            ["Power Level (力量表現)", f"{assessment_data.get('Power_Score', 'N/A')}"],
-            ["Movement Flow (動作流暢度)", f"{assessment_data.get('Flow_Score', 'N/A')}"],
-            ["Rhythm Consistency (節奏穩定度)", f"{assessment_data.get('Rhythm_Score', 'N/A')}"],
-            ["Attendance Rate (%) (訓練出席率)", f"{assessment_data.get('Attendance_Rate', 0):.1f}%"],
+            ["Metric", "Value "],
+            ["Technical Accuracy", f"{assessment_data.get('Accuracy_Score', 'N/A')}"],
+            ["Power Level", f"{assessment_data.get('Power_Score', 'N/A')}"],
+            ["Movement Flow", f"{assessment_data.get('Flow_Score', 'N/A')}"],
+            ["Rhythm Consistency", f"{assessment_data.get('Rhythm_Score', 'N/A')}"],
+            ["Attendance Rate (%)", f"{assessment_data.get('Attendance_Rate', 0):.1f}%"],
         ]
         poomsae_table = Table(poomsae_data, colWidths=[3.1 * inch, 2.4 * inch])
         poomsae_table.setStyle(get_table_style_header())
         elements.append(poomsae_table)
         elements.append(Spacer(1, 0.15 * inch))
 
-    elements.append(Paragraph("Health Status & Risk Assessment (健康狀態與風險評估)", heading_style))
+    elements.append(Paragraph("Health Status & Risk Assessment", heading_style))
     elements.append(Paragraph(assessment_data.get("Health_Status", "N/A"), body_style))
     elements.append(Spacer(1, 0.1 * inch))
 
     elements.append(PageBreak())
-    elements.append(Paragraph("Executive Summary & Action Plan (總結與行動建議)", heading_style))
-    elements.append(Paragraph(f"Overall Athlete Status (整體狀態)：{athlete_info['athlete_status']}", body_style))
+    elements.append(Paragraph("Executive Summary & Action Plan", heading_style))
+    elements.append(Paragraph(f"Overall Athlete Status：{athlete_info['athlete_status']}", body_style))
     elements.append(Spacer(1, 0.08 * inch))
-    elements.append(Paragraph("Executive Summary (評估摘要)：", label_style))
+    elements.append(Paragraph("Executive Summary：", label_style))
     elements.append(Paragraph(athlete_info["exec_summary"], body_style))
     elements.append(Spacer(1, 0.1 * inch))
-    elements.append(Paragraph("Recommended Next Actions (建議行動)：", label_style))
+    elements.append(Paragraph("Recommended Next Actions：", label_style))
     elements.append(Paragraph(athlete_info["next_actions"], body_style))
     elements.append(Spacer(1, 0.2 * inch))
 
@@ -702,7 +701,7 @@ if "pdf_filename" not in st.session_state:
 
 if submit_btn or download_btn:
     if not athlete_name:
-        st.error("⚠️ Please enter Athlete Name (請先輸入選手姓名)。")
+        st.error("⚠️ Please enter Athlete Name。")
         st.stop()
 
     athlete_info = {
@@ -718,7 +717,7 @@ if submit_btn or download_btn:
         "next_actions": next_actions,
     }
 
-    assessment_data["Eval_Mode"] = "Sparring (對打)" if is_sparring else "Poomsae (品勢)"
+    assessment_data["Eval_Mode"] = "Sparring if is_sparring else "Poomsae"
     assessment_data["Athlete_Status"] = athlete_status
     assessment_data["Risk_Flags"] = risk_flags
 
@@ -726,13 +725,13 @@ if submit_btn or download_btn:
         pdf_buffer = generate_pdf_report(athlete_info, assessment_data, is_sparring)
         st.session_state.pdf_buffer = pdf_buffer
         st.session_state.pdf_filename = f"{athlete_name}_Assessment_{eval_date.strftime('%Y%m%d')}.pdf"
-        st.success("📄 PDF report generated successfully.（PDF 報告已產生）")
+        st.success("📄 PDF report generated successfully.")
     except Exception as e:
         st.error(f"❌ PDF generation failed: {str(e)}")
         logger.error(f"PDF error: {str(e)}", exc_info=True)
 
     if submit_btn:
-        with st.spinner("🔄 Uploading data to Google Sheets, please wait…（資料上傳中）"):
+        with st.spinner("🔄 Uploading data to Google Sheets, please wait…"):
             try:
                 conn = st.connection("gsheets", type=GSheetsConnection)
                 row_data = {
@@ -763,7 +762,7 @@ if submit_btn or download_btn:
                     updated_df = new_df
 
                 conn.update(worksheet="sheet1", data=updated_df)
-                st.success(f"✅ Assessment for {athlete_name} has been uploaded.（已成功上傳）")
+                st.success(f"✅ Assessment for {athlete_name} has been uploaded.")
                 st.balloons()
             except Exception as e:
                 st.error(f"❌ Upload failed: {str(e)}")
@@ -771,12 +770,12 @@ if submit_btn or download_btn:
 
 if st.session_state.pdf_buffer:
     st.divider()
-    st.markdown("### 📥 Download Report (報告下載)")
+    st.markdown("### 📥 Download Report")
     col_d1, col_d2, col_d3 = st.columns([2, 2, 2])
 
     with col_d1:
         st.download_button(
-            label="📄 Download PDF Report (下載 PDF 報告)",
+            label="📄 Download PDF Report",
             data=st.session_state.pdf_buffer.getvalue(),
             file_name=st.session_state.pdf_filename,
             mime="application/pdf",
@@ -788,7 +787,7 @@ if st.session_state.pdf_buffer:
         st.info(f"Current file: {st.session_state.pdf_filename}")
 
     with col_d3:
-        if st.button("🔄 Clear & Start New (清除並重新開始)", use_container_width=True):
+        if st.button("🔄 Clear & Start New", use_container_width=True):
             st.session_state.pdf_buffer = None
             st.session_state.pdf_filename = "report.pdf"
             st.rerun()
