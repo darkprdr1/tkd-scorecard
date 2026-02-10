@@ -132,7 +132,7 @@ with col5:
 with col6:
     context = st.selectbox(
         "Context (參賽情境)",
-        ["Domestic Competition (國內賽)", "International Competition (國際賽)", "Training Camp (移地訓練)"],
+        ["Domestic Training (國內訓練)", "International Competition (國際賽)", "Training Camp (移地訓練)"],
     )
 
 with col7:
@@ -384,11 +384,11 @@ with st.form("assessment_form"):
         col_c1, col_c2, col_c3 = st.columns(3)
 
         with col_c1:
-            flexibility_flag = st.selectbox("Flexibility Concern (柔軟度疑慮)", ["None", "Minor", "Moderate", "High"])
+            flexibility_flag = st.selectbox("Flexibility Concern (柔軟度)", ["None", "Minor", "Moderate", "High"])
             assessment_data["Flexibility_Concern"] = flexibility_flag
 
         with col_c2:
-            strength_flag = st.selectbox("Strength/Power Concern (力量／爆發力疑慮)", ["None", "Minor", "Moderate", "High"])
+            strength_flag = st.selectbox("Strength/Power Concern (力量／爆發力)", ["None", "Minor", "Moderate", "High"])
             assessment_data["Strength_Concern"] = strength_flag
 
         with col_c3:
