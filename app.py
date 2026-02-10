@@ -15,14 +15,18 @@ from reportlab.pdfbase.ttfonts import TTFont
 import io
 from datetime import date
 
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 # 🥋 SINGAPORE TAEKWONDO NATIONAL TEAM – ATHLETE SCORECARD
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-st.set_page_config(page_title="Singapore Taekwondo National Team – Athlete Scorecard", page_icon="🥋", layout="wide")
+st.set_page_config(
+    page_title="Singapore Taekwondo National Team – Athlete Scorecard",
+    page_icon="🥋",
+    layout="wide",
+)
 
 st.markdown(
     """
@@ -42,18 +46,18 @@ st.markdown(
 
 st.title("🥋 Singapore Taekwondo National Team – Athlete Scorecard")
 st.markdown(
-    "<p class='report-note'>Coaching observation-first; data supports, not drives, decisions.（以教練專業觀察為核心，數據為輔助參考）</p>",
+    "<p class='report-note'>Coaching observation-first; data supports, not drives, decisions.</p>",
     unsafe_allow_html=True,
 )
 
 # --- Weight Categories ---
 weight_categories = {
-    "Senior (成人)": {
-        "Male (男)": ["-54 kg", "-58 kg", "-63 kg", "-68 kg", "-74 kg", "-80 kg", "-87 kg", "+87 kg"],
-        "Female (女)": ["-46 kg", "-49 kg", "-53 kg", "-57 kg", "-62 kg", "-67 kg", "-73 kg", "+73 kg"],
+    "Senior": {
+        "Male": ["-54 kg", "-58 kg", "-63 kg", "-68 kg", "-74 kg", "-80 kg", "-87 kg", "+87 kg"],
+        "Female": ["-46 kg", "-49 kg", "-53 kg", "-57 kg", "-62 kg", "-67 kg", "-73 kg", "+73 kg"],
     },
-    "Junior – Ages 15–17 (青少年)": {
-        "Male (男)": [
+    "Junior – Ages 15–17": {
+        "Male": [
             "-45 kg",
             "-48 kg",
             "-51 kg",
@@ -65,7 +69,7 @@ weight_categories = {
             "-78 kg",
             "+78 kg",
         ],
-        "Female (女)": [
+        "Female": [
             "-42 kg",
             "-44 kg",
             "-46 kg",
@@ -78,21 +82,21 @@ weight_categories = {
             "+68 kg",
         ],
     },
-    "Cadet – Ages 12–14 (少年)": {
-        "Male (男)": ["-33 kg", "-37 kg", "-41 kg", "-45 kg", "-49 kg", "-53 kg", "-57 kg", "-61 kg", "-65 kg", "+65 kg"],
-        "Female (女)": ["-29 kg", "-33 kg", "-37 kg", "-41 kg", "-44 kg", "-47 kg", "-51 kg", "-55 kg", "-59 kg", "+59 kg"],
+    "Cadet – Ages 12–14": {
+        "Male": ["-33 kg", "-37 kg", "-41 kg", "-45 kg", "-49 kg", "-53 kg", "-57 kg", "-61 kg", "-65 kg", "+65 kg"],
+        "Female": ["-29 kg", "-33 kg", "-37 kg", "-41 kg", "-44 kg", "-47 kg", "-51 kg", "-55 kg", "-59 kg", "+59 kg"],
     },
 }
 
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 # Evaluation Mode
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 
 eval_mode = st.radio(
-    "Evaluation Mode (評估模式)",
-    ["Sparring / Kyorugi (對打)", "Poomsae (品勢)"],
+    "Evaluation Mode",
+    ["Sparring / Kyorugi", "Poomsae"],
     horizontal=True,
-    help="Please select the assessment type for this session.",
+    help="Select the primary assessment type for this session.",
 )
 
 is_sparring = "Sparring" in eval_mode
@@ -100,9 +104,9 @@ is_poomsae = "Poomsae" in eval_mode
 
 st.divider()
 
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 # 1. Athlete Profile
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 
 st.header("1️⃣ Athlete Profile")
 
@@ -118,7 +122,7 @@ with col3:
     age_group = st.selectbox("Age Division", list(weight_categories.keys()))
 
 with col4:
-    gender = st.selectbox("Gender (性別)", ["Male", "Female"])
+    gender = st.selectbox("Gender", ["Male", "Female"])
 
 col5, col6, col7 = st.columns(3)
 
@@ -132,309 +136,405 @@ with col5:
 with col6:
     context = st.selectbox(
         "Context",
-        ["Domestic Training (國內訓練)", "International Competition (國際賽)", "Training Camp (移地訓練)"],
+        ["Domestic Competition", "International Competition", "Training Camp"],
     )
 
 with col7:
     eval_type = st.selectbox(
         "Evaluation Type",
-        ["Regular Check (例行評估)", "Event-based (賽事前後)", "Boot Camp (集訓期間)"],
+        ["Regular Check", "Event-based", "Boot Camp"],
     )
 
 st.divider()
 
-# ═══════════════════════════════════════════════════════════════════
-# 2. Technical / Competition / Health Assessment (inside form)
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
+# 2. Technical / Competition / Health Assessment
+# ================================================================
 
-st.header("2️⃣ Assessment (技術與比賽表現評估)")
+st.header("2️⃣ Assessment")
 
 with st.form("assessment_form"):
 
     assessment_data = {}
 
     if is_sparring:
-        # ─────────────────────────────────────────────────────────────
+        # --------------------------------------------------------
         # Sparring Mode
-        # ─────────────────────────────────────────────────────────────
-        st.subheader("A. Technical & Tactical Execution (技術與戰術執行)")
+        # --------------------------------------------------------
+        st.subheader("A. Technical & Tactical Execution")
         st.markdown(
-            "Focus: Tactical planning, match control, adaptation to different opponent styles, and technical consistency under pressure.（戰術規劃、比賽掌控、對手風格調整與壓力下的技術穩定度）"
+            "Focus: Tactical planning, match control, adaptation to different opponent styles, and technical consistency under pressure."
         )
 
         col_tact1, col_tact2 = st.columns(2)
 
         with col_tact1:
-            st.markdown("**Pre-match Tactical Planning (賽前戰術規劃)**")
+            st.markdown("**Pre-match Tactical Planning**")
             pregame_tactic = st.text_area(
-                "Coaching Observation – Pre-match (教練觀察－賽前)",
+                "Coaching Observation – Pre-match",
                 height=80,
-                placeholder="Tactical clarity, opponent analysis, strategy selection, readiness.（戰術計畫清晰度、對手分析、策略選擇與準備狀態）",
+                placeholder="Tactical clarity, opponent analysis, strategy selection, readiness.",
                 key="pregame_tactic",
             )
             assessment_data["Pre_Match_Tactic"] = pregame_tactic
 
         with col_tact2:
-            st.markdown("**In-match Tactical Execution (比賽中戰術執行)**")
+            st.markdown("**In-match Tactical Execution**")
             inmatch_tactic = st.text_area(
-                "Coaching Observation – In-match (教練觀察－比賽中)",
+                "Coaching Observation – In-match",
                 height=80,
-                placeholder="Consistency of execution, tactical adjustments, tempo control.（戰術執行連貫度、臨場調整與節奏掌握）",
+                placeholder="Consistency of execution, tactical adjustments, tempo control.",
                 key="inmatch_tactic",
             )
             assessment_data["In_Match_Tactic"] = inmatch_tactic
 
-        st.markdown("**Match Control & Opponent Adaptation (比賽掌控與對手風格適應)**")
+        st.markdown("**Match Control & Opponent Adaptation**")
         tech_observation = st.text_area(
-            "Coaching Observation (教練綜合觀察)",
+            "Coaching Observation – Technical & Tactical",
             height=100,
-            placeholder="Match control, response to aggressive/defensive/tempo-based opponents, quality under pressure.（面對不同風格對手時的掌控與調整）",
+            placeholder="Match control, reaction to aggressive/defensive/tempo-based opponents, quality under pressure.",
             key="tech_obs",
         )
         assessment_data["Technical_Observation"] = tech_observation
 
-        st.markdown("**Supporting Metrics (佐證數據)：**")
+        st.markdown("**Supporting Metrics:**")
         col_a1, col_a2, col_a3, col_a4 = st.columns(4)
 
         with col_a1:
-            scoring_eff = st.number_input("Scoring Effectiveness (%) (得分效率)", min_value=0, max_value=100, step=5, value=50)
+            scoring_eff = st.number_input(
+                "Scoring Effectiveness (%)",
+                min_value=0,
+                max_value=100,
+                step=5,
+                value=50,
+            )
             assessment_data["Scoring_Effectiveness"] = scoring_eff
 
         with col_a2:
-            match_control = st.number_input("Match Control (1–5) (比賽掌控度)", min_value=1, max_value=5, step=1, value=3)
+            match_control = st.number_input(
+                "Match Control (1–5)",
+                min_value=1,
+                max_value=5,
+                step=1,
+                value=3,
+            )
             assessment_data["Match_Control"] = match_control
 
         with col_a3:
-            counters = st.number_input("Counters Conceded per Match (每場被反擊次數)", min_value=0, step=1, value=0)
+            counters = st.number_input(
+                "Counters Conceded per Match",
+                min_value=0,
+                step=1,
+                value=0,
+            )
             assessment_data["Counters_Conceded"] = counters
 
         with col_a4:
-            penalties = st.number_input("Penalties per Match (每場受罰次數)", min_value=0, step=1, value=0)
+            penalties = st.number_input(
+                "Penalties per Match",
+                min_value=0,
+                step=1,
+                value=0,
+            )
             assessment_data["Penalties_Received"] = penalties
 
         st.divider()
 
-        st.subheader("B. Competition Behaviour & Readiness (競賽行為與準備度)")
+        st.subheader("B. Competition Behaviour & Readiness")
         st.markdown(
-            "Focus: Response after scoring/penalties, decision-making when behind, and tolerance to international match tempo.（得分／受罰後反應、落後時決策、國際賽節奏承受度）"
+            "Focus: Response after scores/penalties, decision quality when behind, and tolerance to high-tempo competition."
         )
 
         comp_observation = st.text_area(
-            "Coaching Observation (教練綜合觀察)",
+            "Coaching Observation – Competition Behaviour",
             height=100,
-            placeholder="Post-score reactions, decisions when trailing, pressure response, match-load tolerance.（比分變化時的反應、壓力與負荷承受度）",
+            placeholder="Post-score reactions, decisions when trailing, pressure response, match-load tolerance.",
             key="comp_obs",
         )
         assessment_data["Competition_Observation"] = comp_observation
 
-        st.markdown("**Supporting Metrics (佐證數據)：**")
+        st.markdown("**Supporting Metrics:**")
         col_b1, col_b2, col_b3, col_b4 = st.columns(4)
 
         with col_b1:
-            intl_matches = st.number_input("International Matches (累積國際賽場次)", min_value=0, step=1, value=0)
+            intl_matches = st.number_input(
+                "International Matches (lifetime)",
+                min_value=0,
+                step=1,
+                value=0,
+            )
             assessment_data["Intl_Matches"] = intl_matches
 
         with col_b2:
-            consistency = st.selectbox("Performance Consistency (表現穩定度)", ["High", "Moderate", "Low"])
+            consistency = st.selectbox(
+                "Performance Consistency",
+                ["High", "Moderate", "Low"],
+            )
             assessment_data["Performance_Consistency"] = consistency
 
         with col_b3:
-            pressure_response = st.selectbox("Pressure Response (壓力反應)", ["Positive", "Neutral", "Negative"])
+            pressure_response = st.selectbox(
+                "Pressure Response",
+                ["Positive", "Neutral", "Negative"],
+            )
             assessment_data["Pressure_Response"] = pressure_response
 
         with col_b4:
-            load_tolerance = st.selectbox("Match Load Tolerance (比賽負荷承受度)", ["High", "Moderate", "Low"])
+            load_tolerance = st.selectbox(
+                "Match Load Tolerance",
+                ["High", "Moderate", "Low"],
+            )
             assessment_data["Match_Load_Tolerance"] = load_tolerance
 
         st.divider()
 
-        st.subheader("C. Health Status & Risk Flags (健康狀態與風險指標)")
+        st.subheader("C. Health Status & Risk Flags")
         st.markdown(
-            "Focus: Current physical/mental condition, injury history, fatigue level, and any red flags affecting performance or safety.（目前身心狀態、傷病與疲勞狀況）"
+            "Focus: Current physical/mental condition, injury status, fatigue level, and any red flags affecting performance or safety."
         )
 
         health_observation = st.text_area(
-            "Health & Injury Status (健康與傷病狀況)",
+            "Health & Injury Status – Coaching Notes",
             height=100,
-            placeholder="Describe current injuries, fatigue, recovery, and any areas requiring close monitoring.（目前傷病、疲勞與需留意部位）",
+            placeholder="Current injuries, fatigue level, recovery status, and areas needing close monitoring.",
             key="health_obs",
         )
         assessment_data["Health_Status"] = health_observation
 
-        st.markdown("**Risk Flags (風險標記)：**")
+        st.markdown("**Risk Flags:**")
         col_c1, col_c2, col_c3 = st.columns(3)
 
         with col_c1:
-            injury_flag = st.selectbox("Injury Risk (受傷風險)", ["None", "Minor", "Moderate", "High"])
+            injury_flag = st.selectbox(
+                "Injury Risk",
+                ["None", "Minor", "Moderate", "High"],
+            )
             assessment_data["Injury_Risk"] = injury_flag
 
         with col_c2:
-            fatigue_flag = st.selectbox("Fatigue Level (疲勞程度)", ["Low", "Moderate", "High", "Critical"])
+            fatigue_flag = st.selectbox(
+                "Fatigue Level",
+                ["Low", "Moderate", "High", "Critical"],
+            )
             assessment_data["Fatigue_Level"] = fatigue_flag
 
         with col_c3:
-            mental_flag = st.selectbox("Mental Status (心理狀態)", ["Positive", "Stable", "Concerned"])
+            mental_flag = st.selectbox(
+                "Mental Status",
+                ["Positive", "Stable", "Concerned"],
+            )
             assessment_data["Mental_Status"] = mental_flag
 
     else:
-        # ─────────────────────────────────────────────────────────────
+        # --------------------------------------------------------
         # Poomsae Mode
-        # ─────────────────────────────────────────────────────────────
-        st.subheader("A. Technical Execution (品勢技術執行)")
+        # --------------------------------------------------------
+        st.subheader("A. Technical Execution")
         st.markdown(
-            "Focus: Accuracy, power, stance stability, movement precision, and rhythm consistency.（動作正確度、力量、穩定度與節奏）"
+            "Focus: Accuracy, power, stance stability, movement precision, and rhythm consistency."
         )
 
         col_tact1, col_tact2 = st.columns(2)
 
         with col_tact1:
-            st.markdown("**Form Accuracy & Technique Quality (動作正確性與技術品質)**")
+            st.markdown("**Form Accuracy & Technique Quality**")
             form_accuracy = st.text_area(
-                "Coaching Observation – Form (教練觀察－動作)",
+                "Coaching Observation – Form",
                 height=80,
-                placeholder="Sequence accuracy, stance, hand and foot positions, body alignment.（動作順序、站姿、手腳位置與身體線條）",
+                placeholder="Sequence accuracy, stance depth, hand and foot positions, body alignment.",
                 key="form_accuracy",
             )
             assessment_data["Form_Accuracy"] = form_accuracy
 
         with col_tact2:
-            st.markdown("**Power & Delivery (力量與表現)**")
+            st.markdown("**Power & Delivery**")
             power_delivery = st.text_area(
-                "Coaching Observation – Power (教練觀察－力量)",
+                "Coaching Observation – Power",
                 height=80,
-                placeholder="Kick power and height, hand speed, overall explosiveness.（踢擊力量與高度、出手速度與爆發力）",
+                placeholder="Kick height and power, hand speed, overall explosiveness.",
                 key="power_delivery",
             )
             assessment_data["Power_Delivery"] = power_delivery
 
-        st.markdown("**Movement Flow & Rhythm (動作流暢度與節奏)**")
+        st.markdown("**Movement Flow & Rhythm**")
         tech_observation = st.text_area(
-            "Coaching Observation (教練綜合觀察)",
+            "Coaching Observation – Technical Summary",
             height=100,
-            placeholder="Transitions, weight shift, balance, rhythm stability.（動作銜接、重心轉移、平衡與節奏穩定性）",
+            placeholder="Transitions, weight shifting, balance recovery, rhythm stability.",
             key="poomsae_obs",
         )
         assessment_data["Technical_Observation"] = tech_observation
 
-        st.markdown("**Supporting Metrics (佐證數據)：**")
+        st.markdown("**Supporting Metrics:**")
         col_a1, col_a2, col_a3, col_a4 = st.columns(4)
 
         with col_a1:
-            accuracy_score = st.number_input("Technical Accuracy (1–10) (技術正確度)", min_value=1, max_value=10, step=1, value=5)
+            accuracy_score = st.number_input(
+                "Technical Accuracy (1–10)",
+                min_value=1,
+                max_value=10,
+                step=1,
+                value=5,
+            )
             assessment_data["Accuracy_Score"] = accuracy_score
 
         with col_a2:
-            power_score = st.number_input("Power Level (1–10) (力量表現)", min_value=1, max_value=10, step=1, value=5)
+            power_score = st.number_input(
+                "Power Level (1–10)",
+                min_value=1,
+                max_value=10,
+                step=1,
+                value=5,
+            )
             assessment_data["Power_Score"] = power_score
 
         with col_a3:
-            flow_score = st.number_input("Movement Flow (1–10) (動作流暢度)", min_value=1, max_value=10, step=1, value=5)
+            flow_score = st.number_input(
+                "Movement Flow (1–10)",
+                min_value=1,
+                max_value=10,
+                step=1,
+                value=5,
+            )
             assessment_data["Flow_Score"] = flow_score
 
         with col_a4:
-            rhythm_score = st.number_input("Rhythm Consistency (1–10) (節奏穩定度)", min_value=1, max_value=10, step=1, value=5)
+            rhythm_score = st.number_input(
+                "Rhythm Consistency (1–10)",
+                min_value=1,
+                max_value=10,
+                step=1,
+                value=5,
+            )
             assessment_data["Rhythm_Score"] = rhythm_score
 
         st.divider()
 
-        st.subheader("B. Competition Behaviour & Presentation (競賽行為與台風)")
-        st.markdown("Focus: Stage presence, focus, recovery from mistakes, and consistency.（台風、專注度、失誤後恢復與穩定度）")
+        st.subheader("B. Competition Behaviour & Presentation")
+        st.markdown(
+            "Focus: Stage presence, focus under pressure, recovery from mistakes, and overall consistency."
+        )
 
         comp_observation = st.text_area(
-            "Coaching Observation (教練綜合觀察)",
+            "Coaching Observation – Competition Behaviour",
             height=100,
-            placeholder="Presence, confidence, recovery after errors, emotional control.（台風、自信、失誤後恢復與情緒管理）",
+            placeholder="Presence, confidence, recovery after errors, emotional control, overall performance quality.",
             key="poomsae_comp_obs",
         )
         assessment_data["Competition_Observation"] = comp_observation
 
-        st.markdown("**Supporting Metrics (佐證數據)：**")
+        st.markdown("**Supporting Metrics:**")
         col_b1, col_b2, col_b3, col_b4 = st.columns(4)
 
         with col_b1:
-            competition_score = st.number_input("Competition Experience (累積品勢比賽場次)", min_value=0, step=1, value=0)
+            competition_score = st.number_input(
+                "Competition Experience (number of events)",
+                min_value=0,
+                step=1,
+                value=0,
+            )
             assessment_data["Competition_Exp"] = competition_score
 
         with col_b2:
-            focus = st.selectbox("Focus Under Pressure (壓力下專注度)", ["Excellent", "Good", "Fair", "Poor"])
+            focus = st.selectbox(
+                "Focus Under Pressure",
+                ["Excellent", "Good", "Fair", "Poor"],
+            )
             assessment_data["Focus_Under_Pressure"] = focus
 
         with col_b3:
-            consistency_poom = st.selectbox("Attempt Consistency (表現穩定度)", ["High", "Moderate", "Variable"])
+            consistency_poom = st.selectbox(
+                "Attempt Consistency",
+                ["High", "Moderate", "Variable"],
+            )
             assessment_data["Attempt_Consistency"] = consistency_poom
 
         with col_b4:
-            stage_presence = st.selectbox("Stage Presence (台風)", ["Strong", "Neutral", "Weak"])
+            stage_presence = st.selectbox(
+                "Stage Presence",
+                ["Strong", "Neutral", "Weak"],
+            )
             assessment_data["Stage_Presence"] = stage_presence
 
         st.divider()
 
-        st.subheader("C. Health, Consistency & Risks (健康、訓練穩定度與風險)")
-        st.markdown("Focus: Flexibility, strength limitations, movement quality, and training consistency.（柔軟度、肌力、動作品質與穩定性）")
+        st.subheader("C. Health, Training Consistency & Risks")
+        st.markdown(
+            "Focus: Flexibility, strength limitations, movement quality issues, and training continuity."
+        )
 
         health_observation = st.text_area(
-            "Health & Movement Status (健康與動作狀態)",
+            "Health & Movement Status – Coaching Notes",
             height=100,
-            placeholder="Joint mobility, strength imbalance, pain, recovery status.（關節活動度、肌力不平衡、疼痛與恢復狀況）",
+            placeholder="Joint mobility, strength imbalance, pain or discomfort, recovery status, movement quality.",
             key="poomsae_health_obs",
         )
         assessment_data["Health_Status"] = health_observation
 
-        st.markdown("**Risk Flags (風險指標)：**")
+        st.markdown("**Risk Flags:**")
         col_c1, col_c2, col_c3 = st.columns(3)
 
         with col_c1:
-            flexibility_flag = st.selectbox("Flexibility Concern (柔軟度)", ["None", "Minor", "Moderate", "High"])
+            flexibility_flag = st.selectbox(
+                "Flexibility Concern",
+                ["None", "Minor", "Moderate", "High"],
+            )
             assessment_data["Flexibility_Concern"] = flexibility_flag
 
         with col_c2:
-            strength_flag = st.selectbox("Strength/Power Concern (力量／爆發力)", ["None", "Minor", "Moderate", "High"])
+            strength_flag = st.selectbox(
+                "Strength/Power Concern",
+                ["None", "Minor", "Moderate", "High"],
+            )
             assessment_data["Strength_Concern"] = strength_flag
 
         with col_c3:
-            mental_flag = st.selectbox("Mental Status (心理狀態)", ["Positive", "Stable", "Concerned"])
+            mental_flag = st.selectbox(
+                "Mental Status",
+                ["Positive", "Stable", "Concerned"],
+            )
             assessment_data["Mental_Status"] = mental_flag
 
     st.divider()
 
-    # ═══════════════════════════════════════════════════════════════════
+    # ============================================================
     # 3. Executive Summary & Action Plan
-    # ═══════════════════════════════════════════════════════════════════
+    # ============================================================
 
-    st.header("3️⃣ Executive Summary & Action Plan (總結與行動建議)")
+    st.header("3️⃣ Executive Summary & Action Plan")
 
     col_status1, col_status2 = st.columns(2)
 
     with col_status1:
         athlete_status = st.selectbox(
-            "Overall Athlete Status (選手整體狀態)",
+            "Overall Athlete Status",
             ["Excellent", "Good", "Fair", "Needs Support"],
         )
 
     with col_status2:
         risk_flags = st.selectbox(
-            "Risk Flag Summary (風險整體評估)",
+            "Risk Flag Summary",
             ["None", "Minor", "Moderate", "High"],
         )
 
-    st.markdown("**Executive Summary (評估摘要)：**")
+    st.markdown("**Executive Summary:**")
     exec_summary = st.text_area(
-        "Summary of Assessment (2–3 sentences) (以 2–3 句整理本次評估重點)",
+        "Summary of Assessment (2–3 sentences)",
         height=120,
-        placeholder="Highlight key strengths, main areas for development, and readiness for upcoming events.（說明優勢、待加強面向與整體準備度）",
+        placeholder="Highlight key strengths, main development areas, and readiness for upcoming events.",
         key="exec_summary",
     )
     assessment_data["Executive_Summary"] = exec_summary
 
-    st.markdown("**Recommended Next Actions (建議行動計畫)：**")
+    st.markdown("**Recommended Next Actions:**")
     next_actions = st.text_area(
-        "Action Plan for Next 2–4 Weeks (未來 2–4 週行動計畫)",
+        "Action Plan for Next 2–4 Weeks",
         height=120,
         placeholder=(
-            "- Technical / tactical focus areas（技術與戰術重點）\n"
-            "- Training / competition adjustments（訓練與比賽規劃調整）\n"
-            "- Recovery / injury prevention（恢復與傷害預防）\n"
-            "- Mental preparation（心理與賽前準備）"
+            "- Technical / tactical focus areas\n"
+            "- Training and competition adjustments\n"
+            "- Recovery and injury prevention strategies\n"
+            "- Mental preparation and routine"
         ),
         key="next_actions",
     )
@@ -444,36 +544,36 @@ with st.form("assessment_form"):
 
     col_submit1, col_submit2, col_submit3 = st.columns(3)
     with col_submit1:
-        submit_btn = st.form_submit_button("✅ Submit & Upload (儲存並上傳)", use_container_width=True)
+        submit_btn = st.form_submit_button("✅ Submit & Upload", use_container_width=True)
     with col_submit2:
-        download_btn = st.form_submit_button("📄 Generate PDF Only (僅產生 PDF)", use_container_width=True)
+        download_btn = st.form_submit_button("📄 Generate PDF Only", use_container_width=True)
     with col_submit3:
-        st.form_submit_button("❌ Clear Form (清除表單)", type="secondary", use_container_width=True)
+        st.form_submit_button("❌ Clear Form", type="secondary", use_container_width=True)
 
-# ═══════════════════════════════════════════════════════════════════
-# 4. Live Training Attendance (即時訓練出席率與圖表)
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
+# 4. Live Training Attendance (outside form, instant update)
+# ================================================================
 
 st.divider()
-st.header("4️⃣ Training Attendance Overview (訓練出席概況)")
+st.header("4️⃣ Training Attendance Overview")
 
 if is_sparring:
-    st.subheader("Sparring Training Attendance (對打訓練出席率)")
+    st.subheader("Sparring Training Attendance")
 else:
-    st.subheader("Poomsae Training Attendance (品勢訓練出席率)")
+    st.subheader("Poomsae Training Attendance")
 
 col_att1, col_att2 = st.columns(2)
 
 with col_att1:
     live_sessions_required = st.number_input(
-        "Sessions Required (this period) (本期應出席課次)",
+        "Sessions Required (this period)",
         min_value=0,
         step=1,
         value=20,
         key="live_sessions_required",
     )
     live_sessions_attended = st.number_input(
-        "Sessions Attended (實際出席課次)",
+        "Sessions Attended",
         min_value=0,
         step=1,
         value=18,
@@ -485,35 +585,37 @@ with col_att1:
     else:
         live_attendance_rate = 0.0
 
-    rate_label = "On track (進度正常)" if live_attendance_rate >= 85 else "Below target (出席率偏低)"
-    st.metric("Attendance Rate (訓練出席率)", f"{live_attendance_rate:.1f}%", rate_label)
+    rate_label = "On track" if live_attendance_rate >= 85 else "Below target"
+    st.metric("Attendance Rate", f"{live_attendance_rate:.1f}%", rate_label)
 
 with col_att2:
     if live_sessions_required > 0:
         df_live = pd.DataFrame(
             {
-                "Status (狀態)": ["Attended (已出席)", "Missed (缺席)"],
-                "Sessions (課次)": [live_sessions_attended, max(live_sessions_required - live_sessions_attended, 0)],
+                "Status": ["Attended", "Missed"],
+                "Sessions": [live_sessions_attended, max(live_sessions_required - live_sessions_attended, 0)],
             }
         )
         fig_live = px.pie(
             df_live,
-            names="Status (狀態)",
-            values="Sessions (課次)",
+            names="Status",
+            values="Sessions",
             hole=0.55,
-            color="Status (狀態)",
-            color_discrete_map={"Attended (已出席)": "#2ecc71", "Missed (缺席)": "#e74c3c"},
-            title="Attendance Breakdown (出席分布)",
+            color="Status",
+            color_discrete_map={"Attended": "#2ecc71", "Missed": "#e74c3c"},
+            title="Attendance Breakdown",
         )
         fig_live.update_layout(showlegend=True)
         st.plotly_chart(fig_live, use_container_width=True)
 
-# 將即時出席率存入 assessment_data，供 PDF 與上傳使用
+# store attendance into assessment_data for PDF / upload
 assessment_data["Attendance_Rate"] = live_attendance_rate
+assessment_data["Sessions_Required"] = live_sessions_required
+assessment_data["Sessions_Attended"] = live_sessions_attended
 
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 # PDF Generation
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 
 
 def generate_pdf_report(athlete_info, assessment_data, is_sparring):
@@ -525,7 +627,7 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
         font_name = "ChineseFont"
     except Exception:
         font_name = "Helvetica"
-        logger.warning("⚠️ Font file not found; Chinese text may not render correctly in PDF.")
+        logger.warning("⚠️ Font file not found; non-Latin text may not render correctly in PDF.")
 
     styles = getSampleStyleSheet()
     styles["Normal"].fontName = font_name
@@ -613,7 +715,7 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
         [Paragraph("Athlete Name", label_style), athlete_info["athlete_name"]],
         [Paragraph("Evaluation Date", label_style), athlete_info["eval_date"].strftime("%Y-%m-%d")],
         [Paragraph("Age Division", label_style), athlete_info["age_group"]],
-        [Paragraph("Gender)", label_style), athlete_info["gender"]],
+        [Paragraph("Gender", label_style), athlete_info["gender"]],
         [Paragraph("Weight Category", label_style), weight_val],
         [Paragraph("Context", label_style), athlete_info["context"]],
         [Paragraph("Evaluation Type", label_style), athlete_info["eval_type"]],
@@ -641,6 +743,8 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
             ["Counters Conceded per Match", f"{assessment_data.get('Counters_Conceded', 'N/A')}"],
             ["Penalties per Match", f"{assessment_data.get('Penalties_Received', 'N/A')}"],
             ["Attendance Rate (%)", f"{assessment_data.get('Attendance_Rate', 0):.1f}%"],
+            ["Sessions Required", f"{assessment_data.get('Sessions_Required', 0)}"],
+            ["Sessions Attended", f"{assessment_data.get('Sessions_Attended', 0)}"],
         ]
         sparring_table = Table(sparring_data, colWidths=[3.1 * inch, 2.4 * inch])
         sparring_table.setStyle(get_table_style_header())
@@ -656,12 +760,14 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
         elements.append(Spacer(1, 0.1 * inch))
 
         poomsae_data = [
-            ["Metric", "Value "],
+            ["Metric", "Value"],
             ["Technical Accuracy", f"{assessment_data.get('Accuracy_Score', 'N/A')}"],
             ["Power Level", f"{assessment_data.get('Power_Score', 'N/A')}"],
             ["Movement Flow", f"{assessment_data.get('Flow_Score', 'N/A')}"],
             ["Rhythm Consistency", f"{assessment_data.get('Rhythm_Score', 'N/A')}"],
             ["Attendance Rate (%)", f"{assessment_data.get('Attendance_Rate', 0):.1f}%"],
+            ["Sessions Required", f"{assessment_data.get('Sessions_Required', 0)}"],
+            ["Sessions Attended", f"{assessment_data.get('Sessions_Attended', 0)}"],
         ]
         poomsae_table = Table(poomsae_data, colWidths=[3.1 * inch, 2.4 * inch])
         poomsae_table.setStyle(get_table_style_header())
@@ -674,12 +780,12 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
 
     elements.append(PageBreak())
     elements.append(Paragraph("Executive Summary & Action Plan", heading_style))
-    elements.append(Paragraph(f"Overall Athlete Status：{athlete_info['athlete_status']}", body_style))
+    elements.append(Paragraph(f"Overall Athlete Status: {athlete_info['athlete_status']}", body_style))
     elements.append(Spacer(1, 0.08 * inch))
-    elements.append(Paragraph("Executive Summary：", label_style))
+    elements.append(Paragraph("Executive Summary:", label_style))
     elements.append(Paragraph(athlete_info["exec_summary"], body_style))
     elements.append(Spacer(1, 0.1 * inch))
-    elements.append(Paragraph("Recommended Next Actions：", label_style))
+    elements.append(Paragraph("Recommended Next Actions:", label_style))
     elements.append(Paragraph(athlete_info["next_actions"], body_style))
     elements.append(Spacer(1, 0.2 * inch))
 
@@ -690,9 +796,9 @@ def generate_pdf_report(athlete_info, assessment_data, is_sparring):
     buffer.seek(0)
     return buffer
 
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 # Upload & Download
-# ═══════════════════════════════════════════════════════════════════
+# ================================================================
 
 if "pdf_buffer" not in st.session_state:
     st.session_state.pdf_buffer = None
@@ -701,7 +807,7 @@ if "pdf_filename" not in st.session_state:
 
 if submit_btn or download_btn:
     if not athlete_name:
-        st.error("⚠️ Please enter Athlete Name。")
+        st.error("⚠️ Please enter Athlete Name.")
         st.stop()
 
     athlete_info = {
@@ -725,13 +831,13 @@ if submit_btn or download_btn:
         pdf_buffer = generate_pdf_report(athlete_info, assessment_data, is_sparring)
         st.session_state.pdf_buffer = pdf_buffer
         st.session_state.pdf_filename = f"{athlete_name}_Assessment_{eval_date.strftime('%Y%m%d')}.pdf"
-        st.success("📄 PDF report generated successfully.")
+        st.success("PDF report generated successfully.")
     except Exception as e:
-        st.error(f"❌ PDF generation failed: {str(e)}")
+        st.error(f"PDF generation failed: {str(e)}")
         logger.error(f"PDF error: {str(e)}", exc_info=True)
 
     if submit_btn:
-        with st.spinner("🔄 Uploading data to Google Sheets, please wait…"):
+        with st.spinner("Uploading data to Google Sheets..."):
             try:
                 conn = st.connection("gsheets", type=GSheetsConnection)
                 row_data = {
@@ -744,6 +850,8 @@ if submit_btn or download_btn:
                     "Status": athlete_status,
                     "Risk Flags": risk_flags,
                     "Attendance Rate (%)": assessment_data.get("Attendance_Rate", 0),
+                    "Sessions Required": assessment_data.get("Sessions_Required", 0),
+                    "Sessions Attended": assessment_data.get("Sessions_Attended", 0),
                 }
                 new_df = pd.DataFrame([row_data])
 
@@ -762,10 +870,10 @@ if submit_btn or download_btn:
                     updated_df = new_df
 
                 conn.update(worksheet="sheet1", data=updated_df)
-                st.success(f"✅ Assessment for {athlete_name} has been uploaded.")
+                st.success(f"Assessment for {athlete_name} has been uploaded.")
                 st.balloons()
             except Exception as e:
-                st.error(f"❌ Upload failed: {str(e)}")
+                st.error(f"Upload failed: {str(e)}")
                 logger.error(f"Upload error: {str(e)}", exc_info=True)
 
 if st.session_state.pdf_buffer:
@@ -794,5 +902,5 @@ if st.session_state.pdf_buffer:
 
 st.divider()
 st.caption(
-    "🥋 Singapore Taekwondo National Team – Athlete Scorecard ｜ Coaching observation-first, with data as structured support."
+    "🥋 Singapore Taekwondo National Team – Athlete Scorecard | Coaching observation-first, with structured data support."
 )
