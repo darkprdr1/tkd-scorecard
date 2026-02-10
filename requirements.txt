@@ -3,3 +3,4 @@ st-gsheets-connection
 gspread
 pandas>=2.0.0
 plotly>=5.0.0
+reportlab
