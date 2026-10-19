@@ -1,6 +1,6 @@
-streamlit>=1.28.0
-st-gsheets-connection
-gspread
-pandas>=2.0.0
-plotly>=5.0.0
+streamlit>=1.36
+pandas
+numpy
+plotly
 reportlab
+gspread>=5.12
