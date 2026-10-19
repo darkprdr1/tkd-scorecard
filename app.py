@@ -22,6 +22,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 # ═══════════════════════════════════════════════════════════════════
 # 🥋 SINGAPORE TAEKWONDO NATIONAL TEAM – TRAINING TRACKER
+# Daily training first: attendance, monthly evaluation (technique / attitude / fitness), trends
 # 以平時訓練為核心：點名、月度評估（技術／態度／體能）、趨勢追蹤
 # ═══════════════════════════════════════════════════════════════════
 
@@ -30,61 +31,92 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(page_title="Singapore Taekwondo – Training Tracker", page_icon="🥋", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    .zh { font-size: 0.55em; color: #8a8a8a; font-weight: 400; margin-left: 0.35em; }
+    /* Chinese part of labels written as :gray[:small[...]] */
+    .stMarkdownColoredText:has(> span[style*="font-size"]) { color: #9a9a9a !important; font-weight: 400; }
+    .stMarkdownColoredText > span[style*="font-size"] { font-size: 0.78em !important; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 APP_DIR = Path(__file__).parent
 LOCAL_DATA_DIR = APP_DIR / "data"
 
+
+def L(en, zh):
+    """Widget label: English first, Chinese in small grey text."""
+    return f"{en} :gray[:small[{zh}]]"
+
+
+def page_title(icon, en, zh):
+    st.markdown(f"# {icon} {en}<span class='zh'>{zh}</span>", unsafe_allow_html=True)
+
+
+def section(en, zh):
+    st.markdown(f"### {en}<span class='zh'>{zh}</span>", unsafe_allow_html=True)
+
+
 # ─────────────────────────────────────────────────────────────
-# 設定：評估項目、選項、門檻
+# Settings: evaluation items, options, thresholds
 # ─────────────────────────────────────────────────────────────
 
 DISCIPLINES = ["Sparring", "Poomsae"]
-DISCIPLINE_LABELS = {"Sparring": "對打 Sparring", "Poomsae": "品勢 Poomsae"}
-AGE_GROUPS = ["Senior 成人", "Junior 青少年", "Cadet 少年"]
-GENDERS = ["Male 男", "Female 女"]
-SESSIONS = ["上午 AM", "下午 PM", "晚上 Evening"]
+DISCIPLINE_ZH = {"Sparring": "對打", "Poomsae": "品勢"}
+AGE_GROUPS = ["Senior", "Junior", "Cadet"]
+AGE_GROUP_ZH = {"Senior": "成人", "Junior": "青少年", "Cadet": "少年"}
+GENDERS = ["Male", "Female"]
+SESSIONS = ["AM", "PM", "Evening"]
 
-PRESENT, LATE, EXCUSED, ABSENT = "出席 Present", "遲到 Late", "請假 Excused", "缺席 Absent"
+PRESENT, LATE, EXCUSED, ABSENT = "Present", "Late", "Excused", "Absent"
 STATUSES = [PRESENT, LATE, EXCUSED, ABSENT]
+STATUS_HELP = "Present 出席 / Late 遲到 / Excused 請假 / Absent 缺席"
 
-INJURY_LEVELS = ["無 None", "輕微 Minor", "中度 Moderate", "嚴重 Serious"]
-INJURY_FLAG_LEVELS = {"中度 Moderate", "嚴重 Serious"}
+INJURY_LEVELS = ["None", "Minor", "Moderate", "Serious"]
+INJURY_FLAG_LEVELS = {"Moderate", "Serious"}
+INJURY_HELP = "None 無 / Minor 輕微 / Moderate 中度 / Serious 嚴重"
 
-# (欄位名稱, 中文, 英文)
+RESULTS = ["Gold", "Silver", "Bronze", "5th or lower", "Participated"]
+
+# (column, English, Chinese)
 TECH_ITEMS = {
     "Sparring": [
-        ("Tech_Footwork", "步法", "Footwork"),
-        ("Tech_Kicking", "踢擊技術", "Kicking technique"),
-        ("Tech_Combinations", "組合攻擊", "Combinations"),
-        ("Tech_Defense", "防守與反擊", "Defense & counter"),
-        ("Tech_Distance", "距離與時機", "Distance & timing"),
+        ("Tech_Footwork", "Footwork", "步法"),
+        ("Tech_Kicking", "Kicking", "踢擊技術"),
+        ("Tech_Combinations", "Combinations", "組合攻擊"),
+        ("Tech_Defense", "Defense & Counter", "防守與反擊"),
+        ("Tech_Distance", "Distance & Timing", "距離與時機"),
     ],
     "Poomsae": [
-        ("Tech_Accuracy", "動作正確度", "Accuracy"),
-        ("Tech_Power", "力量", "Power"),
-        ("Tech_Balance", "平衡與站姿", "Balance & stance"),
-        ("Tech_Flow", "流暢與節奏", "Flow & rhythm"),
-        ("Tech_Expression", "表現力", "Expression"),
+        ("Tech_Accuracy", "Accuracy", "動作正確度"),
+        ("Tech_Power", "Power", "力量"),
+        ("Tech_Balance", "Balance & Stance", "平衡與站姿"),
+        ("Tech_Flow", "Flow & Rhythm", "流暢與節奏"),
+        ("Tech_Expression", "Expression", "表現力"),
     ],
 }
 ATTITUDE_ITEMS = [
-    ("Att_Focus", "專注度", "Focus"),
-    ("Att_Effort", "努力程度", "Effort"),
-    ("Att_Coachability", "接受指導", "Coachability"),
-    ("Att_Discipline", "紀律與守時", "Discipline & punctuality"),
-    ("Att_Teamwork", "團隊合作", "Teamwork"),
+    ("Att_Focus", "Focus", "專注度"),
+    ("Att_Effort", "Effort", "努力程度"),
+    ("Att_Coachability", "Coachability", "接受指導"),
+    ("Att_Discipline", "Discipline & Punctuality", "紀律與守時"),
+    ("Att_Teamwork", "Teamwork", "團隊合作"),
 ]
 ALL_TECH_COLS = [c for items in TECH_ITEMS.values() for c, _, _ in items]
 ATT_COLS = [c for c, _, _ in ATTITUDE_ITEMS]
 SCORE_COLS = ALL_TECH_COLS + ATT_COLS + ["Fitness"]
 
-SCORE_GUIDE = "1 = 需大幅加強　2 = 待加強　3 = 達標　4 = 良好　5 = 優秀"
+SCORE_GUIDE = "1 = Needs major work · 2 = Developing · 3 = Meets standard · 4 = Good · 5 = Excellent"
 
-# 總覽頁的警示門檻
+# Overview alert thresholds
 ATTENDANCE_TARGET = 80  # %
 ATTITUDE_MIN = 3.0
 TECH_DROP = 0.5
 
-# 每個工作表的欄位
+# Columns of each worksheet
 SHEETS = {
     "athletes": ["Name", "Discipline", "Age Group", "Gender", "Weight", "Active", "Notes"],
     "attendance": ["Date", "Session", "Name", "Status", "Recorded At"],
@@ -96,8 +128,21 @@ SHEETS = {
 }
 
 
+def normalize(value, options):
+    """Map older bilingual values (e.g. '出席 Present', 'Senior 成人') onto the English option."""
+    text = str(value).strip()
+    for opt in sorted(options, key=len, reverse=True):
+        if opt in text:
+            return opt
+    return text
+
+
+def disc_label(d):
+    return f"{d} ({DISCIPLINE_ZH[d]})" if d in DISCIPLINE_ZH else str(d)
+
+
 # ═══════════════════════════════════════════════════════════════════
-# 資料儲存：有 service account 時用 Google Sheets，否則存本機 CSV
+# Storage: Google Sheets with a service account, otherwise local CSV
 # ═══════════════════════════════════════════════════════════════════
 
 
@@ -119,7 +164,7 @@ def ensure_columns(df, name):
 
 
 class SheetsStore:
-    """Google Sheets。新增資料一律用 append，不會覆蓋別人同時寫入的內容。"""
+    """Google Sheets. New records are always appended, so simultaneous saves never overwrite each other."""
 
     label = "Google Sheets"
 
@@ -173,9 +218,9 @@ class SheetsStore:
 
 
 class LocalStore:
-    """本機 CSV（沒有 Google Sheets 設定時使用，方便測試）。"""
+    """Local CSV files (used when no Google Sheets config is present – handy for testing)."""
 
-    label = "本機 CSV（測試模式）"
+    label = "Local CSV (test mode)"
 
     def __init__(self, folder):
         self.folder = Path(folder)
@@ -226,7 +271,7 @@ def overwrite_sheet(name, df):
 
 
 # ─────────────────────────────────────────────────────────────
-# 資料整理
+# Data preparation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -253,6 +298,9 @@ def load_roster(active_only=True):
     df = load("athletes").copy()
     df["Name"] = df["Name"].astype(str).str.strip()
     df = df[df["Name"] != ""]
+    df["Discipline"] = df["Discipline"].map(lambda v: normalize(v, DISCIPLINES))
+    df["Age Group"] = df["Age Group"].map(lambda v: normalize(v, AGE_GROUPS))
+    df["Gender"] = df["Gender"].map(lambda v: normalize(v, GENDERS))
     df["Active"] = df["Active"].astype(str).str.strip().str.lower().isin(["yes", "true", "1", ""])
     if active_only:
         df = df[df["Active"]]
@@ -261,6 +309,8 @@ def load_roster(active_only=True):
 
 def load_attendance():
     df = load("attendance").copy()
+    df["Session"] = df["Session"].map(lambda v: normalize(v, SESSIONS))
+    df["Status"] = df["Status"].map(lambda v: normalize(v, STATUSES))
     df = df.sort_values("Recorded At").drop_duplicates(["Date", "Session", "Name"], keep="last")
     df["Period"] = df["Date"].astype(str).str[:7]
     return df
@@ -271,13 +321,14 @@ def load_evaluations():
     df = df.sort_values("Recorded At").drop_duplicates(["Period", "Name"], keep="last")
     for col in SCORE_COLS:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["Injury"] = df["Injury"].map(lambda v: normalize(v, INJURY_LEVELS) if str(v).strip() else "")
     df["Tech_Avg"] = df[ALL_TECH_COLS].mean(axis=1).round(2)
     df["Att_Avg"] = df[ATT_COLS].mean(axis=1).round(2)
     return df.sort_values("Period").reset_index(drop=True)
 
 
 def attendance_summary(att, period=None):
-    """每位選手的出席統計。出席率 =（出席＋遲到）÷（出席＋遲到＋缺席），請假不計入分母。"""
+    """Per-athlete counts. Rate = (Present + Late) ÷ (Present + Late + Absent); Excused is not counted."""
     if period:
         att = att[att["Period"] == period]
     if att.empty:
@@ -296,9 +347,9 @@ def attendance_summary(att, period=None):
 
 
 def filter_roster(roster, discipline, age_group):
-    if discipline != "全部 All":
+    if discipline != "All":
         roster = roster[roster["Discipline"] == discipline]
-    if age_group != "全部 All":
+    if age_group != "All":
         roster = roster[roster["Age Group"] == age_group]
     return roster
 
@@ -308,7 +359,7 @@ def tech_items_for(discipline):
 
 
 # ═══════════════════════════════════════════════════════════════════
-# PDF（月報）
+# PDF (monthly report)
 # ═══════════════════════════════════════════════════════════════════
 
 CJK_FONT_CANDIDATES = [
@@ -339,13 +390,18 @@ def get_pdf_font():
 
 
 def rich(text):
-    """使用者輸入 → Paragraph 文字：跳脫 < > &，保留換行。"""
+    """User input → Paragraph-safe text: escape < > &, keep line breaks."""
     if text is None or (isinstance(text, float) and np.isnan(text)):
         text = ""
     text = str(text).strip()
     if not text:
         return "—"
     return escape(text).replace("\r\n", "\n").replace("\n", "<br/>")
+
+
+def bi(en, zh):
+    """PDF label: English, followed by small grey Chinese."""
+    return f"{escape(en)} <font size='7' color='#8a8a8a'>{escape(zh)}</font>"
 
 
 def fmt_score(v):
@@ -367,7 +423,8 @@ def generate_monthly_pdf(athlete, period, evals, att_period, history):
     cell = ParagraphStyle("C", parent=styles["Normal"], fontName=font, fontSize=9, leading=12)
 
     def table(data, widths, header=True):
-        t = Table([[Paragraph(rich(v), cell) for v in row] for row in data], colWidths=widths)
+        """Cells must already be Paragraph-safe (use rich() for user values, bi() for labels)."""
+        t = Table([[Paragraph(str(v), cell) for v in row] for row in data], colWidths=widths)
         style = [
             ("GRID", (0, 0), (-1, -1), 0.6, colors.HexColor("#cccccc")),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -388,33 +445,33 @@ def generate_monthly_pdf(athlete, period, evals, att_period, history):
 
     el = [
         Paragraph("SINGAPORE TAEKWONDO NATIONAL TEAM", title),
-        Paragraph(f"Monthly Training Report 月度訓練報告 – {period}", sub),
+        Paragraph(f"Monthly Training Report – {period} <font size='8' color='#8a8a8a'>月度訓練報告</font>", sub),
         Spacer(1, 0.2 * inch),
         table(
             [
-                ["Athlete 選手", athlete["Name"]],
-                ["Discipline 項目", DISCIPLINE_LABELS.get(athlete["Discipline"], athlete["Discipline"])],
-                ["Age Group 組別", athlete.get("Age Group", "")],
-                ["Gender 性別", athlete.get("Gender", "")],
-                ["Weight 量級", athlete.get("Weight", "")],
+                [bi("Athlete", "選手"), rich(athlete["Name"])],
+                [bi("Discipline", "項目"), rich(disc_label(athlete["Discipline"]))],
+                [bi("Age Group", "組別"), rich(athlete.get("Age Group", ""))],
+                [bi("Gender", "性別"), rich(athlete.get("Gender", ""))],
+                [bi("Weight", "量級"), rich(athlete.get("Weight", ""))],
             ],
             [1.8 * inch, 4.2 * inch],
             header=False,
         ),
     ]
 
-    el.append(Paragraph("Attendance 出席", h2))
+    el.append(Paragraph(bi("Attendance", "出席"), h2))
     a = att_period
     el.append(
         table(
             [
-                ["Sessions 課次", "Present 出席", "Late 遲到", "Excused 請假", "Absent 缺席", "Rate 出席率"],
+                [bi("Sessions", "課次"), bi("Present", "出席"), bi("Late", "遲到"), bi("Excused", "請假"), bi("Absent", "缺席"), bi("Rate", "出席率")],
                 [
-                    a["Sessions"],
-                    a[PRESENT],
-                    a[LATE],
-                    a[EXCUSED],
-                    a[ABSENT],
+                    int(a["Sessions"]),
+                    int(a[PRESENT]),
+                    int(a[LATE]),
+                    int(a[EXCUSED]),
+                    int(a[ABSENT]),
                     "—" if pd.isna(a["Rate"]) else f"{a['Rate']:.1f}%",
                 ],
             ],
@@ -423,36 +480,36 @@ def generate_monthly_pdf(athlete, period, evals, att_period, history):
     )
 
     def score_rows(items):
-        rows = [["Item 項目", "This month 本月", "Last month 上月"]]
-        for col, zh, en in items:
-            rows.append([f"{zh} {en}", fmt_score(cur[col] if cur is not None else None), fmt_score(prev[col] if prev is not None else None)])
+        rows = [[bi("Item", "項目"), bi("This month", "本月"), bi("Last month", "上月")]]
+        for col, en, zh in items:
+            rows.append([bi(en, zh), fmt_score(cur[col] if cur is not None else None), fmt_score(prev[col] if prev is not None else None)])
         return rows
 
-    el.append(Paragraph("Technique 技術（1–5）", h2))
+    el.append(Paragraph(bi("Technique (1–5)", "技術"), h2))
     el.append(table(score_rows(tech_items_for(athlete["Discipline"])), [3.0 * inch, 1.5 * inch, 1.5 * inch]))
-    el.append(Paragraph("Attitude 訓練態度（1–5）", h2))
+    el.append(Paragraph(bi("Training Attitude (1–5)", "訓練態度"), h2))
     el.append(table(score_rows(ATTITUDE_ITEMS), [3.0 * inch, 1.5 * inch, 1.5 * inch]))
 
-    el.append(Paragraph("Physical 體能與健康", h2))
+    el.append(Paragraph(bi("Fitness & Health", "體能與健康"), h2))
     el.append(
         table(
             [
-                ["Fitness 體能（1–5）", fmt_score(cur["Fitness"] if cur is not None else None)],
-                ["Injury 傷病", cur["Injury"] if cur is not None else "—"],
+                [bi("Fitness (1–5)", "體能"), fmt_score(cur["Fitness"] if cur is not None else None)],
+                [bi("Injury", "傷病"), rich(cur["Injury"] if cur is not None else "")],
             ],
             [3.0 * inch, 3.0 * inch],
             header=False,
         )
     )
 
-    el.append(Paragraph("Coach Comment 教練評語", h2))
+    el.append(Paragraph(bi("Coach Comment", "教練評語"), h2))
     el.append(Paragraph(rich(cur["Comment"] if cur is not None else ""), body))
-    el.append(Paragraph("Next Month Goal 下月目標", h2))
+    el.append(Paragraph(bi("Goal for Next Month", "下月目標"), h2))
     el.append(Paragraph(rich(cur["Next Goal"] if cur is not None else ""), body))
 
     if len(history):
-        el.append(Paragraph("Recent Trend 近期趨勢", h2))
-        rows = [["Period 月份", "Technique avg 技術均分", "Attitude avg 態度均分", "Attendance 出席率"]]
+        el.append(Paragraph(bi("Recent Trend", "近期趨勢"), h2))
+        rows = [[bi("Month", "月份"), bi("Technique avg", "技術均分"), bi("Attitude avg", "態度均分"), bi("Attendance", "出席率")]]
         for _, r in history.tail(6).iterrows():
             rate = r.get("Rate")
             rows.append([r["Period"], fmt_score(r["Tech_Avg"]), fmt_score(r["Att_Avg"]), "—" if pd.isna(rate) else f"{rate:.0f}%"])
@@ -467,21 +524,34 @@ def generate_monthly_pdf(athlete, period, evals, att_period, history):
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 側邊欄
+# Sidebar
 # ═══════════════════════════════════════════════════════════════════
 
-PAGES = ["🏠 團隊總覽", "✅ 點名", "📝 月度評估", "📈 選手檔案", "👥 選手名單"]
+PAGES = {
+    "overview": ("🏠", "Team Overview", "團隊總覽"),
+    "attendance": ("✅", "Attendance", "點名"),
+    "evaluation": ("📝", "Monthly Evaluation", "月度評估"),
+    "profile": ("📈", "Athlete Profile", "選手檔案"),
+    "roster": ("👥", "Roster", "選手名單"),
+}
 
 with st.sidebar:
     st.title("🥋 Training Tracker")
-    page = st.radio("功能 Menu", PAGES, label_visibility="collapsed")
+    page = st.radio(
+        "Menu",
+        list(PAGES),
+        format_func=lambda k: f"{PAGES[k][0]} {PAGES[k][1]}",
+        label_visibility="collapsed",
+    )
     st.divider()
-    st.caption("篩選 Filters")
-    f_discipline = st.selectbox("項目 Discipline", ["全部 All"] + DISCIPLINES, format_func=lambda d: DISCIPLINE_LABELS.get(d, d))
-    f_age = st.selectbox("組別 Age Group", ["全部 All"] + AGE_GROUPS)
+    st.caption("Filters · 篩選")
+    f_discipline = st.selectbox(L("Discipline", "項目"), ["All"] + DISCIPLINES, format_func=disc_label)
+    f_age = st.selectbox(
+        L("Age Group", "組別"), ["All"] + AGE_GROUPS, format_func=lambda a: f"{a} ({AGE_GROUP_ZH[a]})" if a in AGE_GROUP_ZH else a
+    )
     st.divider()
-    st.caption(f"資料來源：{get_store().label}")
-    if st.button("🔄 重新載入資料", use_container_width=True):
+    st.caption(f"Data source · 資料來源: {get_store().label}")
+    if st.button("🔄 Reload data", use_container_width=True, help="重新載入資料"):
         load.clear()
         st.rerun()
 
@@ -491,7 +561,7 @@ try:
     attendance = load_attendance()
     evaluations = load_evaluations()
 except Exception as e:
-    st.error(f"❌ 無法讀取資料：{e}")
+    st.error(f"❌ Could not load data（無法讀取資料）: {e}")
     logger.error("Load error", exc_info=True)
     st.stop()
 
@@ -500,22 +570,22 @@ roster_view = filter_roster(roster, f_discipline, f_age)
 
 def need_roster():
     if roster.empty:
-        st.info("還沒有選手資料，請先到「👥 選手名單」新增選手。")
+        st.info("No athletes yet — add them on the **👥 Roster** page first.（請先到選手名單新增選手）")
         st.stop()
     if roster_view.empty:
-        st.info("目前的篩選條件下沒有選手。")
+        st.info("No athletes match the current filters.（目前的篩選條件下沒有選手）")
         st.stop()
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 🏠 團隊總覽
+# 🏠 Team Overview
 # ═══════════════════════════════════════════════════════════════════
 
-if page == "🏠 團隊總覽":
-    st.title("🏠 團隊總覽 Team Overview")
+if page == "overview":
+    page_title("🏠", "Team Overview", "團隊總覽")
     need_roster()
 
-    period = st.selectbox("月份 Month", month_options())
+    period = st.selectbox(L("Month", "月份"), month_options())
     att_sum = attendance_summary(attendance, period)
     cur = evaluations[evaluations["Period"] == period].set_index("Name")
     prev = evaluations[evaluations["Period"] == prev_period(period)].set_index("Name")
@@ -533,32 +603,34 @@ if page == "🏠 團隊總覽":
 
         flags = []
         if not pd.isna(rate) and rate < ATTENDANCE_TARGET:
-            flags.append("出席率低")
+            flags.append("Low attendance")
         if not pd.isna(att_avg) and att_avg < ATTITUDE_MIN:
-            flags.append("態度待關注")
+            flags.append("Attitude")
         if not pd.isna(delta) and delta <= -TECH_DROP:
-            flags.append("技術退步")
+            flags.append("Technique drop")
         if injury in INJURY_FLAG_LEVELS:
-            flags.append("傷病")
+            flags.append("Injury")
         if e is None:
-            flags.append("未評估")
+            flags.append("Not evaluated")
 
         rows.append(
             {
-                "選手": name,
-                "項目": DISCIPLINE_LABELS.get(a["Discipline"], a["Discipline"]),
-                "組別": a["Age Group"],
-                "出席率": rate,
-                "課次": int(att_sum["Sessions"].get(name, 0)),
-                "技術均分": tech,
-                "技術變化": delta,
-                "態度均分": att_avg,
-                "傷病": injury,
-                "提醒": "、".join(flags),
-                "_n": len([f for f in flags if f != "未評估"]),
+                "Athlete": name,
+                "Discipline": a["Discipline"],
+                "Age Group": a["Age Group"],
+                "Attendance": rate,
+                "Sessions": int(att_sum["Sessions"].get(name, 0)),
+                "Technique": tech,
+                "Tech Δ": delta,
+                "Attitude": att_avg,
+                "Injury": injury,
+                "Alerts": ", ".join(flags),
+                "_n": len([f for f in flags if f != "Not evaluated"]),
             }
         )
-    table_df = pd.DataFrame(rows).sort_values(["_n", "出席率"], ascending=[False, True]).drop(columns="_n")
+    table_df = pd.DataFrame(rows).sort_values(["_n", "Attendance"], ascending=[False, True])
+    flagged = table_df[table_df["_n"] > 0]
+    table_df = table_df.drop(columns="_n")
 
     sessions_held = attendance[attendance["Period"] == period][["Date", "Session"]].drop_duplicates()
     att_in_view = att_sum[att_sum.index.isin(roster_view["Name"])]
@@ -566,132 +638,146 @@ if page == "🏠 團隊總覽":
     denom_total = attended_total + att_in_view[ABSENT].sum()
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("選手人數", len(roster_view))
-    c2.metric("本月訓練課次", len(sessions_held))
-    c3.metric("團隊出席率", f"{attended_total / denom_total * 100:.1f}%" if denom_total else "—")
-    c4.metric("已完成評估", f"{table_df['技術均分'].notna().sum()} / {len(table_df)}")
+    c1.metric(L("Athletes", "選手人數"), len(roster_view))
+    c2.metric(L("Sessions this month", "本月課次"), len(sessions_held))
+    c3.metric(L("Team attendance", "團隊出席率"), f"{attended_total / denom_total * 100:.1f}%" if denom_total else "—")
+    c4.metric(L("Evaluated", "已評估"), f"{table_df['Technique'].notna().sum()} / {len(table_df)}")
 
-    flagged = table_df[table_df["提醒"].str.replace("未評估", "").str.strip("、") != ""]
     if len(flagged):
-        st.warning(f"⚠️ 有 {len(flagged)} 位選手需要留意：" + "、".join(flagged["選手"]))
+        st.warning(f"⚠️ {len(flagged)} athlete(s) need attention（需要留意）: " + ", ".join(flagged["Athlete"]))
 
     st.dataframe(
         table_df,
         hide_index=True,
         use_container_width=True,
         column_config={
-            "出席率": st.column_config.ProgressColumn("出席率", min_value=0, max_value=100, format="%.0f%%"),
-            "技術均分": st.column_config.NumberColumn("技術均分", format="%.1f"),
-            "技術變化": st.column_config.NumberColumn("技術變化（較上月）", format="%+.1f"),
-            "態度均分": st.column_config.NumberColumn("態度均分", format="%.1f"),
+            "Athlete": st.column_config.TextColumn("Athlete", help="選手"),
+            "Discipline": st.column_config.TextColumn("Discipline", help="項目"),
+            "Age Group": st.column_config.TextColumn("Age Group", help="組別"),
+            "Attendance": st.column_config.ProgressColumn("Attendance", help="出席率", min_value=0, max_value=100, format="%.0f%%"),
+            "Sessions": st.column_config.NumberColumn("Sessions", help="課次"),
+            "Technique": st.column_config.NumberColumn("Technique", help="技術均分", format="%.1f"),
+            "Tech Δ": st.column_config.NumberColumn("Tech Δ", help="技術變化（較上月）", format="%+.1f"),
+            "Attitude": st.column_config.NumberColumn("Attitude", help="態度均分", format="%.1f"),
+            "Injury": st.column_config.TextColumn("Injury", help="傷病"),
+            "Alerts": st.column_config.TextColumn("Alerts", help="提醒", width="medium"),
         },
     )
     st.caption(
-        f"提醒規則：出席率 < {ATTENDANCE_TARGET}%、態度均分 < {ATTITUDE_MIN:g}、技術均分比上月退步 ≥ {TECH_DROP:g}、傷病為中度以上。"
-        "出席率 =（出席＋遲到）÷（出席＋遲到＋缺席），請假不計入。"
+        f"Alerts: attendance < {ATTENDANCE_TARGET}% · attitude avg < {ATTITUDE_MIN:g} · technique avg down ≥ {TECH_DROP:g} vs last month · "
+        "moderate or serious injury. Attendance = (Present + Late) ÷ (Present + Late + Absent); Excused is not counted.  \n"
+        f":small[提醒規則：出席率 < {ATTENDANCE_TARGET}%、態度均分 < {ATTITUDE_MIN:g}、技術均分比上月退步 ≥ {TECH_DROP:g}、傷病為中度以上。請假不計入出席率。]"
     )
 
-    chart_df = table_df.dropna(subset=["出席率"]).sort_values("出席率")
+    chart_df = table_df.dropna(subset=["Attendance"]).sort_values("Attendance")
     if len(chart_df):
-        fig = px.bar(chart_df, x="出席率", y="選手", orientation="h", range_x=[0, 100], title=f"{period} 出席率")
+        fig = px.bar(chart_df, x="Attendance", y="Athlete", orientation="h", range_x=[0, 100], title=f"Attendance – {period}", labels={"Attendance": "Attendance (%)"})
         fig.add_vline(x=ATTENDANCE_TARGET, line_dash="dash", line_color="#e74c3c")
         fig.update_layout(height=max(300, 24 * len(chart_df) + 100), yaxis_title=None)
         st.plotly_chart(fig, use_container_width=True)
 
     st.download_button(
-        "⬇️ 下載總覽 CSV",
+        "⬇️ Download overview (CSV)",
         table_df.to_csv(index=False).encode("utf-8-sig"),
         file_name=f"team_overview_{period}.csv",
         mime="text/csv",
+        help="下載總覽 CSV",
     )
 
 
 # ═══════════════════════════════════════════════════════════════════
-# ✅ 點名
+# ✅ Attendance
 # ═══════════════════════════════════════════════════════════════════
 
-elif page == "✅ 點名":
-    st.title("✅ 點名 Attendance")
+elif page == "attendance":
+    page_title("✅", "Attendance", "點名")
     need_roster()
 
     c1, c2 = st.columns(2)
-    att_date = c1.date_input("日期 Date", date.today())
-    session = c2.selectbox("時段 Session", SESSIONS)
+    att_date = c1.date_input(L("Date", "日期"), date.today())
+    session = c2.selectbox(L("Session", "時段"), SESSIONS)
     date_str = att_date.strftime("%Y-%m-%d")
 
     existing = attendance[(attendance["Date"] == date_str) & (attendance["Session"] == session)]
     existing_status = dict(zip(existing["Name"], existing["Status"]))
     if len(existing):
-        st.info(f"這堂課已經點過名（{len(existing)} 人），修改後再儲存會覆蓋舊紀錄。")
+        st.info(
+            f"This session already has a record ({len(existing)} athletes). Saving again will replace it.  \n"
+            ":small[這堂課已經點過名，修改後再儲存會覆蓋舊紀錄。]"
+        )
     else:
-        st.caption("預設全部「出席」，只要修改遲到、請假、缺席的選手即可。")
+        st.caption("Everyone starts as **Present** — just change the athletes who were late, excused or absent.  \n:small[預設全部出席，只要修改遲到、請假、缺席的選手即可。]")
 
     editor_df = pd.DataFrame(
         {
-            "選手": roster_view["Name"],
-            "項目": roster_view["Discipline"].map(lambda d: DISCIPLINE_LABELS.get(d, d)),
-            "組別": roster_view["Age Group"],
-            "狀態": [existing_status.get(n, PRESENT) for n in roster_view["Name"]],
+            "Athlete": roster_view["Name"],
+            "Discipline": roster_view["Discipline"],
+            "Age Group": roster_view["Age Group"],
+            "Status": [existing_status.get(n, PRESENT) for n in roster_view["Name"]],
         }
     )
     edited = st.data_editor(
         editor_df,
         hide_index=True,
         use_container_width=True,
-        disabled=["選手", "項目", "組別"],
-        column_config={"狀態": st.column_config.SelectboxColumn("狀態 Status", options=STATUSES, required=True)},
+        disabled=["Athlete", "Discipline", "Age Group"],
+        column_config={"Status": st.column_config.SelectboxColumn("Status", help=STATUS_HELP, options=STATUSES, required=True)},
         key=f"att_{date_str}_{session}_{f_discipline}_{f_age}",
     )
 
-    counts = edited["狀態"].value_counts()
-    st.caption("　".join(f"{s}：{counts.get(s, 0)}" for s in STATUSES))
+    counts = edited["Status"].value_counts()
+    st.caption(" · ".join(f"{s}: {counts.get(s, 0)}" for s in STATUSES))
 
-    if st.button("💾 儲存點名", type="primary"):
+    if st.button("💾 Save attendance", type="primary", help="儲存點名"):
         ts = now_str()
-        rows = [{"Date": date_str, "Session": session, "Name": r["選手"], "Status": r["狀態"], "Recorded At": ts} for _, r in edited.iterrows()]
+        rows = [{"Date": date_str, "Session": session, "Name": r["Athlete"], "Status": r["Status"], "Recorded At": ts} for _, r in edited.iterrows()]
         try:
             append_rows("attendance", rows)
-            st.success(f"✅ 已儲存 {date_str} {session} 的點名（{len(rows)} 人）")
+            st.success(f"✅ Saved attendance for {date_str} {session} ({len(rows)} athletes)")
         except Exception as e:
-            st.error(f"❌ 儲存失敗：{e}")
+            st.error(f"❌ Save failed（儲存失敗）: {e}")
             logger.error("Attendance save error", exc_info=True)
 
     st.divider()
     period = date_str[:7]
-    st.subheader(f"{period} 出席統計")
+    section(f"Attendance – {period}", "本月出席統計")
     summary = attendance_summary(load_attendance(), period)
-    summary = summary[summary.index.isin(roster_view["Name"])].reset_index().rename(columns={"Name": "選手", "Sessions": "課次", "Rate": "出席率"})
+    summary = summary[summary.index.isin(roster_view["Name"])].reset_index().rename(columns={"Name": "Athlete", "Rate": "Attendance"})
     if summary.empty:
-        st.caption("本月還沒有點名紀錄。")
+        st.caption("No attendance recorded this month yet.（本月還沒有點名紀錄）")
     else:
         st.dataframe(
-            summary.sort_values("出席率"),
+            summary.sort_values("Attendance"),
             hide_index=True,
             use_container_width=True,
-            column_config={"出席率": st.column_config.ProgressColumn("出席率", min_value=0, max_value=100, format="%.0f%%")},
+            column_config={"Attendance": st.column_config.ProgressColumn("Attendance", help="出席率", min_value=0, max_value=100, format="%.0f%%")},
         )
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 📝 月度評估（整隊一次填）
+# 📝 Monthly Evaluation (whole squad in one table)
 # ═══════════════════════════════════════════════════════════════════
 
-elif page == "📝 月度評估":
-    st.title("📝 月度評估 Monthly Evaluation")
+elif page == "evaluation":
+    page_title("📝", "Monthly Evaluation", "月度評估")
     need_roster()
 
     c1, c2, c3 = st.columns(3)
-    period = c1.selectbox("月份 Month", month_options())
+    period = c1.selectbox(L("Month", "月份"), month_options())
     default_disc = DISCIPLINES.index(f_discipline) if f_discipline in DISCIPLINES else 0
-    discipline = c2.radio("項目 Discipline", DISCIPLINES, index=default_disc, horizontal=True, format_func=lambda d: DISCIPLINE_LABELS[d])
-    coach = c3.text_input("評估教練 Coach（選填）")
+    discipline = c2.radio(L("Discipline", "項目"), DISCIPLINES, index=default_disc, horizontal=True, format_func=disc_label)
+    coach = c3.text_input(L("Coach (optional)", "評估教練，選填"))
 
     group = roster_view[roster_view["Discipline"] == discipline]
     if group.empty:
-        st.info(f"目前篩選條件下沒有{DISCIPLINE_LABELS[discipline]}選手。")
+        st.info(f"No {discipline} athletes match the current filters.（目前篩選條件下沒有{DISCIPLINE_ZH[discipline]}選手）")
         st.stop()
 
-    st.caption(f"評分標準：{SCORE_GUIDE}。只要有填任一分數的選手才會被儲存；同一個月重複儲存會以最新的為準。")
+    st.caption(
+        f"Scoring: {SCORE_GUIDE}. Only athletes with at least one score are saved; saving the same month again keeps the latest version.  \n"
+        ":small[評分：1 需大幅加強 · 2 待加強 · 3 達標 · 4 良好 · 5 優秀。只有填了分數的選手會被儲存；同月重複儲存以最新為準。"
+        "欄位前綴 T = 技術、A = 態度；把滑鼠移到欄位名稱上可看中文說明。]"
+    )
 
     tech_items = tech_items_for(discipline)
     att_sum = attendance_summary(attendance, period)
@@ -703,8 +789,8 @@ elif page == "📝 月度評估":
 
     data = {
         "Name": group["Name"].tolist(),
-        "出席率": [att_sum["Rate"].get(n, np.nan) for n in group["Name"]],
-        "上月技術": [prev.loc[n, "Tech_Avg"] if n in prev.index else np.nan for n in group["Name"]],
+        "Attendance": [att_sum["Rate"].get(n, np.nan) for n in group["Name"]],
+        "Last Tech": [prev.loc[n, "Tech_Avg"] if n in prev.index else np.nan for n in group["Name"]],
     }
     for col, _, _ in tech_items + ATTITUDE_ITEMS:
         data[col] = pd.to_numeric(pd.Series([existing(n, col) for n in group["Name"]]), errors="coerce").tolist()
@@ -714,34 +800,36 @@ elif page == "📝 月度評估":
     data["Next Goal"] = [existing(n, "Next Goal", "") for n in group["Name"]]
     editor_df = pd.DataFrame(data)
 
-    score_cfg = lambda zh, en: st.column_config.NumberColumn(zh, help=en, min_value=1, max_value=5, step=1, format="%d", width="small")
+    def score_cfg(label, zh):
+        return st.column_config.NumberColumn(label, help=zh, min_value=1, max_value=5, step=1, format="%d")
+
     column_config = {
-        "Name": st.column_config.TextColumn("選手", width="small"),
-        "出席率": st.column_config.NumberColumn("出席率", help="由點名紀錄自動計算", format="%.0f%%", width="small"),
-        "上月技術": st.column_config.NumberColumn("上月技術", help="上個月技術均分（參考）", format="%.1f", width="small"),
-        "Fitness": score_cfg("體能", "Fitness"),
-        "Injury": st.column_config.SelectboxColumn("傷病", options=INJURY_LEVELS, required=True, width="small"),
-        "Comment": st.column_config.TextColumn("教練短評", width="large"),
-        "Next Goal": st.column_config.TextColumn("下月目標", width="medium"),
+        "Name": st.column_config.TextColumn("Athlete", help="選手", width="small"),
+        "Attendance": st.column_config.NumberColumn("Attendance", help="出席率（由點名紀錄自動計算）", format="%.0f%%", width="small"),
+        "Last Tech": st.column_config.NumberColumn("Last Tech", help="上月技術均分（參考）", format="%.1f", width="small"),
+        "Fitness": score_cfg("Fitness", "體能"),
+        "Injury": st.column_config.SelectboxColumn("Injury", help=INJURY_HELP, options=INJURY_LEVELS, required=True, width="small"),
+        "Comment": st.column_config.TextColumn("Coach Comment", help="教練短評", width="large"),
+        "Next Goal": st.column_config.TextColumn("Next Goal", help="下月目標", width="medium"),
     }
-    for col, zh, en in tech_items:
-        column_config[col] = score_cfg(f"技·{zh}", en)
-    for col, zh, en in ATTITUDE_ITEMS:
-        column_config[col] = score_cfg(f"態·{zh}", en)
+    for col, en, zh in tech_items:
+        column_config[col] = score_cfg(f"T · {en}", f"技術：{zh}")
+    for col, en, zh in ATTITUDE_ITEMS:
+        column_config[col] = score_cfg(f"A · {en}", f"態度：{zh}")
 
     if len(cur.index.intersection(group["Name"])):
-        st.info("本月已有評估紀錄，表格已帶入上次儲存的內容。")
+        st.info("This month already has evaluations — the table is pre-filled with the last saved version.  \n:small[本月已有評估紀錄，表格已帶入上次儲存的內容。]")
 
     edited = st.data_editor(
         editor_df,
         hide_index=True,
         use_container_width=True,
-        disabled=["Name", "出席率", "上月技術"],
+        disabled=["Name", "Attendance", "Last Tech"],
         column_config=column_config,
         key=f"eval_{period}_{discipline}_{f_age}",
     )
 
-    if st.button("💾 儲存評估", type="primary"):
+    if st.button("💾 Save evaluations", type="primary", help="儲存評估"):
         ts = now_str()
         score_cols = [c for c, _, _ in tech_items + ATTITUDE_ITEMS] + ["Fitness"]
         rows = []
@@ -752,7 +840,7 @@ elif page == "📝 月度評估":
                 "Period": period,
                 "Name": r["Name"],
                 "Discipline": discipline,
-                "Attendance Rate (%)": r["出席率"],
+                "Attendance Rate (%)": r["Attendance"],
                 "Injury": r["Injury"],
                 "Comment": r["Comment"],
                 "Next Goal": r["Next Goal"],
@@ -763,30 +851,30 @@ elif page == "📝 月度評估":
                 row[c] = r[c]
             rows.append(row)
         if not rows:
-            st.warning("沒有任何選手填了分數，未儲存。")
+            st.warning("No scores entered — nothing was saved.（沒有任何選手填了分數，未儲存）")
         else:
             try:
                 append_rows("evaluations", rows)
                 skipped = len(edited) - len(rows)
-                st.success(f"✅ 已儲存 {len(rows)} 位選手的 {period} 評估" + (f"（{skipped} 位未填分數，略過）" if skipped else ""))
+                st.success(f"✅ Saved {period} evaluations for {len(rows)} athlete(s)" + (f" ({skipped} without scores skipped)" if skipped else ""))
             except Exception as e:
-                st.error(f"❌ 儲存失敗：{e}")
+                st.error(f"❌ Save failed（儲存失敗）: {e}")
                 logger.error("Evaluation save error", exc_info=True)
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 📈 選手檔案
+# 📈 Athlete Profile
 # ═══════════════════════════════════════════════════════════════════
 
-elif page == "📈 選手檔案":
-    st.title("📈 選手檔案 Athlete Profile")
+elif page == "profile":
+    page_title("📈", "Athlete Profile", "選手檔案")
     need_roster()
 
-    name = st.selectbox("選手 Athlete", roster_view["Name"].tolist())
+    name = st.selectbox(L("Athlete", "選手"), roster_view["Name"].tolist())
     athlete = roster_view[roster_view["Name"] == name].iloc[0]
     st.caption(
-        " ｜ ".join(
-            str(x) for x in [DISCIPLINE_LABELS.get(athlete["Discipline"], athlete["Discipline"]), athlete["Age Group"], athlete["Gender"], athlete["Weight"]] if str(x).strip()
+        " | ".join(
+            str(x) for x in [disc_label(athlete["Discipline"]), athlete["Age Group"], athlete["Gender"], athlete["Weight"]] if str(x).strip()
         )
     )
 
@@ -805,117 +893,124 @@ elif page == "📈 選手檔案":
     latest = ev.iloc[-1] if len(ev) else None
     before = ev.iloc[-2] if len(ev) > 1 else None
 
+    def delta(col):
+        if latest is None or before is None or pd.isna(latest[col]) or pd.isna(before[col]):
+            return None
+        return f"{latest[col] - before[col]:+.1f}"
+
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("本月出席率", "—" if pd.isna(rate_now) else f"{rate_now:.0f}%")
+    c1.metric(L("Attendance this month", "本月出席率"), "—" if pd.isna(rate_now) else f"{rate_now:.0f}%")
     c2.metric(
-        f"技術均分（{latest['Period']}）" if latest is not None else "技術均分",
+        L(f"Technique ({latest['Period']})" if latest is not None else "Technique", "技術均分"),
         "—" if latest is None or pd.isna(latest["Tech_Avg"]) else f"{latest['Tech_Avg']:.1f}",
-        None if before is None or pd.isna(before["Tech_Avg"]) or pd.isna(latest["Tech_Avg"]) else f"{latest['Tech_Avg'] - before['Tech_Avg']:+.1f}",
+        delta("Tech_Avg"),
     )
-    c3.metric(
-        "態度均分",
-        "—" if latest is None or pd.isna(latest["Att_Avg"]) else f"{latest['Att_Avg']:.1f}",
-        None if before is None or pd.isna(before["Att_Avg"]) or pd.isna(latest["Att_Avg"]) else f"{latest['Att_Avg'] - before['Att_Avg']:+.1f}",
-    )
-    c4.metric("傷病", latest["Injury"] if latest is not None and latest["Injury"] else "—")
+    c3.metric(L("Attitude", "態度均分"), "—" if latest is None or pd.isna(latest["Att_Avg"]) else f"{latest['Att_Avg']:.1f}", delta("Att_Avg"))
+    c4.metric(L("Injury", "傷病"), latest["Injury"] if latest is not None and latest["Injury"] else "—")
 
     if history.empty:
-        st.info("這位選手還沒有點名或評估紀錄。")
+        st.info("No attendance or evaluations for this athlete yet.（這位選手還沒有點名或評估紀錄）")
     else:
         col_l, col_r = st.columns(2)
         with col_l:
-            trend = history.melt(id_vars="Period", value_vars=["Tech_Avg", "Att_Avg"], var_name="類別", value_name="分數").dropna()
-            trend["類別"] = trend["類別"].map({"Tech_Avg": "技術均分", "Att_Avg": "態度均分"})
+            trend = history.melt(id_vars="Period", value_vars=["Tech_Avg", "Att_Avg"], var_name="Category", value_name="Score").dropna()
+            trend["Category"] = trend["Category"].map({"Tech_Avg": "Technique", "Att_Avg": "Attitude"})
             if len(trend):
-                fig = px.line(trend, x="Period", y="分數", color="類別", markers=True, range_y=[0.8, 5.2], title="技術／態度趨勢")
+                fig = px.line(trend, x="Period", y="Score", color="Category", markers=True, range_y=[0.8, 5.2], title="Technique & Attitude Trend")
                 fig.update_xaxes(type="category", title=None)
                 st.plotly_chart(fig, use_container_width=True)
             rates = history.dropna(subset=["Rate"])
             if len(rates):
-                fig = px.bar(rates, x="Period", y="Rate", range_y=[0, 100], title="每月出席率", labels={"Rate": "出席率 (%)"})
+                fig = px.bar(rates, x="Period", y="Rate", range_y=[0, 100], title="Monthly Attendance", labels={"Rate": "Attendance (%)"})
                 fig.add_hline(y=ATTENDANCE_TARGET, line_dash="dash", line_color="#e74c3c")
                 fig.update_xaxes(type="category", title=None)
                 st.plotly_chart(fig, use_container_width=True)
         with col_r:
             if latest is not None:
                 items = tech_items_for(athlete["Discipline"]) + ATTITUDE_ITEMS
-                labels = [zh for _, zh, _ in items]
+                labels = [en for _, en, _ in items]
                 fig = go.Figure()
                 if before is not None:
                     fig.add_trace(go.Scatterpolar(r=[before[c] for c, _, _ in items], theta=labels, fill="toself", name=before["Period"], opacity=0.45))
                 fig.add_trace(go.Scatterpolar(r=[latest[c] for c, _, _ in items], theta=labels, fill="toself", name=latest["Period"]))
-                fig.update_layout(polar=dict(radialaxis=dict(range=[0, 5], dtick=1)), title="最新評估 vs 前一次")
+                fig.update_layout(polar=dict(radialaxis=dict(range=[0, 5], dtick=1)), title="Latest vs Previous Evaluation")
                 st.plotly_chart(fig, use_container_width=True)
 
     if len(ev):
-        st.subheader("評估紀錄")
+        section("Evaluation History", "評估紀錄")
         show = ev.sort_values("Period", ascending=False)[["Period", "Tech_Avg", "Att_Avg", "Fitness", "Injury", "Comment", "Next Goal", "Coach"]]
         st.dataframe(
-            show.rename(columns={"Period": "月份", "Tech_Avg": "技術均分", "Att_Avg": "態度均分", "Fitness": "體能", "Injury": "傷病", "Comment": "教練短評", "Next Goal": "下月目標", "Coach": "教練"}),
+            show.rename(columns={"Period": "Month", "Tech_Avg": "Technique", "Att_Avg": "Attitude", "Comment": "Coach Comment"}),
             hide_index=True,
             use_container_width=True,
         )
 
-    with st.expander("🗓️ 最近點名紀錄"):
+    with st.expander(L("🗓️ Recent attendance", "最近點名紀錄")):
         if att.empty:
-            st.caption("沒有點名紀錄。")
+            st.caption("No attendance records.（沒有點名紀錄）")
         else:
             st.dataframe(
-                att.sort_values(["Date", "Session"], ascending=False)[["Date", "Session", "Status"]].head(40).rename(columns={"Date": "日期", "Session": "時段", "Status": "狀態"}),
+                att.sort_values(["Date", "Session"], ascending=False)[["Date", "Session", "Status"]].head(40),
                 hide_index=True,
                 use_container_width=True,
             )
 
-    with st.expander("🏆 比賽紀錄（選填）"):
-        comps = load("competitions")
+    with st.expander(L("🏆 Competition record (optional)", "比賽紀錄，選填")):
+        comps = load("competitions").copy()
+        comps["Result"] = comps["Result"].map(lambda v: normalize(v, RESULTS))
         comps = comps[comps["Name"] == name].sort_values("Date", ascending=False)
         if len(comps):
             st.dataframe(comps[["Date", "Event", "Division", "Result", "Notes"]], hide_index=True, use_container_width=True)
         with st.form("competition_form", clear_on_submit=True):
             cc1, cc2, cc3, cc4 = st.columns(4)
-            comp_date = cc1.date_input("日期", date.today())
-            event = cc2.text_input("賽事名稱")
-            division = cc3.text_input("組別／量級", value=str(athlete["Weight"]))
-            result = cc4.selectbox("成績", ["金牌 Gold", "銀牌 Silver", "銅牌 Bronze", "第 5 名以後", "參賽 Participated"])
-            notes = st.text_input("備註")
-            if st.form_submit_button("➕ 新增比賽紀錄"):
+            comp_date = cc1.date_input(L("Date", "日期"), date.today())
+            event = cc2.text_input(L("Event", "賽事名稱"))
+            division = cc3.text_input(L("Division", "組別／量級"), value=str(athlete["Weight"]))
+            result = cc4.selectbox(L("Result", "成績"), RESULTS)
+            notes = st.text_input(L("Notes", "備註"))
+            if st.form_submit_button("➕ Add competition"):
                 if not event.strip():
-                    st.error("請輸入賽事名稱。")
+                    st.error("Please enter the event name.（請輸入賽事名稱）")
                 else:
                     append_rows(
                         "competitions",
                         [{"Date": comp_date.strftime("%Y-%m-%d"), "Name": name, "Event": event, "Division": division, "Result": result, "Notes": notes, "Recorded At": now_str()}],
                     )
-                    st.success("已新增。")
+                    st.success("Added.（已新增）")
                     st.rerun()
 
     st.divider()
-    st.subheader("📄 月報 PDF")
+    section("📄 Monthly Report (PDF)", "月報")
     periods = sorted(set(ev["Period"]) | set(monthly_rates.index), reverse=True) or [this_month]
-    pdf_period = st.selectbox("月份", periods)
+    pdf_period = st.selectbox(L("Month", "月份"), periods)
     pdf_att = attendance_summary(att, pdf_period)
     pdf_att = pdf_att.loc[name] if name in pdf_att.index else pd.Series({**{s: 0 for s in STATUSES}, "Sessions": 0, "Rate": np.nan})
     try:
         pdf = generate_monthly_pdf(athlete, pdf_period, ev, pdf_att, history[history["Period"] <= pdf_period])
         st.download_button(
-            "⬇️ 下載月報 PDF",
+            "⬇️ Download report (PDF)",
             pdf.getvalue(),
             file_name=f"{name}_Training_Report_{pdf_period}.pdf",
             mime="application/pdf",
             type="primary",
+            help="下載月報 PDF",
         )
     except Exception as e:
-        st.error(f"❌ PDF 產生失敗：{e}")
+        st.error(f"❌ PDF generation failed（PDF 產生失敗）: {e}")
         logger.error("PDF error", exc_info=True)
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 👥 選手名單
+# 👥 Roster
 # ═══════════════════════════════════════════════════════════════════
 
-elif page == "👥 選手名單":
-    st.title("👥 選手名單 Roster")
-    st.caption("在表格最下方新增選手；不再訓練的選手取消「在隊」即可（保留歷史紀錄）。⚠️ 改名字會讓舊紀錄對不上，請盡量不要改。")
+elif page == "roster":
+    page_title("👥", "Roster", "選手名單")
+    st.caption(
+        "Add athletes in the last row. For athletes who leave, untick **Active** — their history is kept. "
+        "⚠️ Avoid renaming athletes: old records are linked by name.  \n"
+        ":small[在表格最下方新增選手；不再訓練的選手取消「Active」即可（保留歷史紀錄）。請盡量不要改名字，舊紀錄是用名字對應的。]"
+    )
 
     editor_df = roster_all[SHEETS["athletes"]].copy()
     edited = st.data_editor(
@@ -924,31 +1019,33 @@ elif page == "👥 選手名單":
         hide_index=True,
         use_container_width=True,
         column_config={
-            "Name": st.column_config.TextColumn("姓名", required=True),
-            "Discipline": st.column_config.SelectboxColumn("項目", options=DISCIPLINES, required=True, default="Sparring"),
-            "Age Group": st.column_config.SelectboxColumn("組別", options=AGE_GROUPS, required=True, default=AGE_GROUPS[0]),
-            "Gender": st.column_config.SelectboxColumn("性別", options=GENDERS, required=True, default=GENDERS[0]),
-            "Weight": st.column_config.TextColumn("量級", help="例如 -68 kg；品勢可留空"),
-            "Active": st.column_config.CheckboxColumn("在隊", default=True),
-            "Notes": st.column_config.TextColumn("備註"),
+            "Name": st.column_config.TextColumn("Name", help="姓名", required=True),
+            "Discipline": st.column_config.SelectboxColumn("Discipline", help="項目：Sparring 對打 / Poomsae 品勢", options=DISCIPLINES, required=True, default="Sparring"),
+            "Age Group": st.column_config.SelectboxColumn(
+                "Age Group", help="組別：Senior 成人 / Junior 青少年 / Cadet 少年", options=AGE_GROUPS, required=True, default=AGE_GROUPS[0]
+            ),
+            "Gender": st.column_config.SelectboxColumn("Gender", help="性別", options=GENDERS, required=True, default=GENDERS[0]),
+            "Weight": st.column_config.TextColumn("Weight", help="量級，例如 -68 kg；品勢可留空"),
+            "Active": st.column_config.CheckboxColumn("Active", help="在隊", default=True),
+            "Notes": st.column_config.TextColumn("Notes", help="備註"),
         },
         key="roster_editor",
     )
 
-    if st.button("💾 儲存名單", type="primary"):
+    if st.button("💾 Save roster", type="primary", help="儲存名單"):
         edited = edited.copy()
         edited["Name"] = edited["Name"].fillna("").astype(str).str.strip()
         edited = edited[edited["Name"] != ""]
         dupes = edited["Name"][edited["Name"].duplicated()].unique()
         if len(dupes):
-            st.error("姓名重複：" + "、".join(dupes))
+            st.error("Duplicate names（姓名重複）: " + ", ".join(dupes))
         else:
             edited["Active"] = edited["Active"].fillna(True).astype(bool)
             edited = edited.fillna("")
             try:
                 overwrite_sheet("athletes", edited)
-                st.success(f"✅ 名單已儲存（{len(edited)} 人）")
+                st.success(f"✅ Roster saved ({len(edited)} athletes)")
                 st.rerun()
             except Exception as e:
-                st.error(f"❌ 儲存失敗：{e}")
+                st.error(f"❌ Save failed（儲存失敗）: {e}")
                 logger.error("Roster save error", exc_info=True)
